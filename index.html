@@ -22,7 +22,8 @@
         body {
             background: var(--bg); color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-            margin: 0; padding: 0; padding-bottom: 90px;
+            margin: 0; padding: 0; 
+            /* Убрал нижний отступ, так как меню больше нет */
             user-select: none;
         }
 
@@ -47,7 +48,7 @@
         .section-title { margin: 0 16px 10px; color: var(--gray); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
 
         /* Список валют */
-        .coin-list { padding: 0 16px; }
+        .coin-list { padding: 0 16px 40px 16px; /* Добавил отступ снизу для скролла */ }
         .coin-row {
             background: var(--card); padding: 16px; border-radius: 16px; margin-bottom: 8px;
             display: flex; justify-content: space-between; align-items: center; cursor: pointer;
@@ -120,14 +121,7 @@
             border-radius: 14px; font-size: 16px; font-weight: 700; margin-top: 24px; cursor: pointer;
         }
 
-        /* Меню */
-        .tab-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(20,20,20,0.95);
-            border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 12px 0 24px; z-index: 90;
-        }
-        .tab-item { text-align: center; color: var(--gray); font-size: 10px; cursor: pointer; }
-        .tab-item.active { color: var(--text); }
-        .tab-icon { font-size: 20px; margin-bottom: 4px; display: block; }
+        /* Меню удалено, стили для него больше не нужны */
     </style>
 </head>
 <body>
@@ -138,7 +132,7 @@
                 <div class="avatar" id="user-avatar"></div>
                 <div>
                     <div style="font-weight: 700;" id="username">Гость</div>
-                    <div style="font-size: 12px; color: var(--green);">Online</div>
+                    <div style="font-size: 13px; color: var(--gray);" id="user-tag">@loading</div>
                 </div>
             </div>
             <div class="settings-btn" onclick="openSettingsScreen()">
@@ -211,13 +205,6 @@
         </div>
     </div>
 
-    <div id="screen-profile" class="screen">
-        <div class="header"><h2>Профиль</h2></div>
-        <div style="padding: 16px; text-align: center; color: var(--gray);">
-            Функционал профиля в разработке
-        </div>
-    </div>
-
     <div class="modal-bg" id="overlay" onclick="closeModal()"></div>
     <div class="modal" id="modal">
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
@@ -248,15 +235,6 @@
         </div>
 
         <button class="action-btn" onclick="sendOrder()">Далее</button>
-    </div>
-
-    <div class="tab-bar" id="tab-bar">
-        <div class="tab-item active" onclick="switchTab('home')">
-            <i class="fa-solid fa-house tab-icon"></i> Курсы
-        </div>
-        <div class="tab-item" onclick="switchTab('profile')">
-            <i class="fa-solid fa-user tab-icon"></i> Профиль
-        </div>
     </div>
 
     <script>
@@ -301,6 +279,14 @@
             if (tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
                 document.getElementById('username').innerText = user.first_name;
+                
+                // --- ЛОГИКА ЮЗЕРНЕЙМА ---
+                if (user.username) {
+                    document.getElementById('user-tag').innerText = '@' + user.username;
+                } else {
+                    document.getElementById('user-tag').innerText = ''; // Если нет юзернейма
+                }
+
                 if(user.photo_url) {
                     document.getElementById('user-avatar').style.backgroundImage = `url('${user.photo_url}')`;
                 }
@@ -339,12 +325,10 @@
             }
         }
 
-        // --- ЭКРАН НАСТРОЕК (НОВОЕ) ---
+        // --- ЭКРАН НАСТРОЕК (МЕНЮ) ---
         function openSettingsScreen() {
             document.getElementById('screen-home').classList.remove('active');
             document.getElementById('screen-settings').classList.add('active');
-            document.getElementById('tab-bar').style.display = 'none'; // Скрываем меню
-            
             tg.BackButton.show();
             tg.BackButton.onClick(closeSettingsScreen);
         }
@@ -352,15 +336,12 @@
         function closeSettingsScreen() {
             document.getElementById('screen-settings').classList.remove('active');
             document.getElementById('screen-home').classList.add('active');
-            document.getElementById('tab-bar').style.display = 'flex'; // Возвращаем меню
-            
             tg.BackButton.hide();
         }
         
-        // Переход из настроек в локации
         function openLocationScreenFromSettings() {
              document.getElementById('screen-settings').classList.remove('active');
-             openLocationScreen(true); // true = пришли из настроек
+             openLocationScreen(true);
         }
 
         // --- ЭКРАН ЛОКАЦИЙ ---
@@ -386,7 +367,6 @@
             renderLocationList();
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('screen-locations').classList.add('active');
-            document.getElementById('tab-bar').style.display = 'none';
             
             tg.BackButton.show();
             tg.BackButton.onClick(closeLocationScreen);
@@ -401,7 +381,6 @@
                 tg.BackButton.onClick(closeSettingsScreen);
             } else {
                 document.getElementById('screen-home').classList.add('active');
-                document.getElementById('tab-bar').style.display = 'flex';
                 tg.BackButton.hide();
             }
         }
@@ -485,12 +464,6 @@
             };
             tg.sendData(JSON.stringify(data));
             tg.close();
-        }
-
-        function switchTab(screen) {
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            if(screen === 'home') document.getElementById('screen-home').classList.add('active');
-            if(screen === 'profile') document.getElementById('screen-profile').classList.add('active');
         }
 
         init();
