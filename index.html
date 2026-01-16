@@ -23,7 +23,7 @@
             background: var(--bg); color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
             margin: 0; padding: 0; 
-            padding-bottom: 40px; /* Отступ чтобы кнопки не прилипали к краю */
+            padding-bottom: 40px;
             user-select: none;
         }
 
@@ -48,21 +48,23 @@
 
         .section-title { margin: 0 16px 10px; color: var(--gray); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* СПИСОК ВАЛЮТ */
+        /* СПИСОК ВАЛЮТ (ТЕПЕРЬ НЕ КЛИКАБЕЛЬНЫЙ) */
         .coin-list { padding: 0 16px 10px 16px; }
         .coin-row {
             background: var(--card); padding: 16px; border-radius: 16px; margin-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            /* Убрал курсор и анимацию нажатия, так как это просто инфо-список */
+            cursor: default; 
         }
+        
         .coin-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; margin-right: 12px; font-weight: bold; }
         
         .bg-usdt { background: #26A17B; }
         .bg-btc { background: #F7931A; }
         .bg-eth { background: #627EEA; }
         .bg-ton { background: #0098EA; }
-        .bg-sol { background: #000; border: 1px solid #333; }
 
-        /* КНОПКИ ВНИЗУ (Exchange & Support) */
+        /* КНОПКИ ВНИЗУ */
         .bottom-actions { padding: 16px; margin-top: 10px; }
         
         .btn-main {
@@ -233,10 +235,9 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // ----------------------------------------------------
-        // НАСТРОЙКА: ВПИШИ СЮДА СВОЙ ЮЗЕРНЕЙМ (без собачки @)
-        const SUPPORT_USERNAME = 'rexes_support'; 
-        // ----------------------------------------------------
+        // --- ВПИШИ СВОЙ НИК НИЖЕ ---
+        const SUPPORT_USERNAME = 'YOUR_USERNAME'; 
+        // ---------------------------
 
         const locations = [
             { id: 'msk', name: 'Россия, г. Москва', currency: 'RUB', symbol: '₽', rate: 98.5 },
@@ -277,7 +278,6 @@
         }
 
         function openSupport() {
-            // Открывает личку в телеграме
             tg.openTelegramLink('https://t.me/' + SUPPORT_USERNAME);
         }
 
@@ -290,7 +290,7 @@
                 const localPrice = (priceUSD * currentLocation.rate).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
                 const item = document.createElement('div');
                 item.className = 'coin-row';
-                item.onclick = () => openExchangeModal(ticker, priceUSD);
+                // УБРАЛ ONCLICK ЗДЕСЬ. Теперь нажатие ничего не делает.
                 item.innerHTML = `
                     <div style="display: flex; align-items: center;">
                         <div class="coin-icon ${meta.color}">${meta.icon}</div>
@@ -308,7 +308,7 @@
             }
         }
 
-        // --- ЛОГИКА ЭКРАНОВ И МОДАЛОК (без изменений) ---
+        // --- ЛОГИКА ЭКРАНОВ И МОДАЛОК ---
         function openSettingsScreen() {
             document.getElementById('screen-home').classList.remove('active');
             document.getElementById('screen-settings').classList.add('active');
