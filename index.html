@@ -15,7 +15,6 @@
             --text: #FFFFFF;
             --gray: #8E8E93;
             --green: #26A17B;
-            --red: #FF3B30;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -34,7 +33,7 @@
 
         .header { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
         .user-block { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 36px; height: 36px; border-radius: 50%; background: #333; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; background: #333; background-size: cover; }
         .settings-btn { width: 36px; height: 36px; background: var(--card); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;}
 
         /* Кнопка выбора города */
@@ -70,6 +69,18 @@
         }
         .city-item.selected { border: 1px solid var(--orange); color: var(--orange); }
         .city-item:active { transform: scale(0.98); }
+
+        /* --- ЭКРАН НАСТРОЕК (МЕНЮ) --- */
+        .settings-header { padding: 16px; font-size: 24px; cursor: pointer; }
+        .settings-list { padding: 0 16px; }
+        .settings-item {
+            background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 10px;
+            display: flex; align-items: center; justify-content: space-between;
+            font-weight: 600; font-size: 15px; cursor: pointer;
+        }
+        .settings-item:active { transform: scale(0.98); opacity: 0.8; }
+        .st-left { display: flex; align-items: center; gap: 12px; }
+        .st-icon { font-size: 18px; width: 24px; text-align: center; color: white; }
 
         /* Модальное окно обмена */
         .modal-bg {
@@ -124,12 +135,15 @@
     <div id="screen-home" class="screen active">
         <div class="header">
             <div class="user-block">
-                <div class="avatar"></div> <div>
+                <div class="avatar" id="user-avatar"></div>
+                <div>
                     <div style="font-weight: 700;" id="username">Гость</div>
                     <div style="font-size: 12px; color: var(--green);">Online</div>
                 </div>
             </div>
-            <div class="settings-btn"><i class="fa-solid fa-gear"></i></div>
+            <div class="settings-btn" onclick="openSettingsScreen()">
+                <i class="fa-solid fa-gear"></i>
+            </div>
         </div>
 
         <div class="location-selector" onclick="openLocationScreen()">
@@ -139,8 +153,7 @@
 
         <div class="section-title">Популярные валюты</div>
 
-        <div class="coin-list" id="coin-list">
-            </div>
+        <div class="coin-list" id="coin-list"></div>
     </div>
 
     <div id="screen-locations" class="screen">
@@ -149,8 +162,53 @@
             <div class="settings-btn" onclick="closeLocationScreen()">✕</div>
         </div>
         <div class="section-title">Выберите офис для обмена</div>
-        <div class="city-list" id="city-list">
+        <div class="city-list" id="city-list"></div>
+    </div>
+
+    <div id="screen-settings" class="screen">
+        <div class="settings-header" onclick="closeSettingsScreen()">✕</div>
+        
+        <div class="settings-list">
+            <div class="settings-item" onclick="openLocationScreenFromSettings()">
+                <div class="st-left">
+                    <i class="fa-solid fa-location-dot st-icon"></i>
+                    <span>Локация по умолчанию</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
             </div>
+
+            <div class="settings-item">
+                <div class="st-left">
+                    <i class="fa-solid fa-book st-icon"></i>
+                    <span>Заявки</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
+            </div>
+
+            <div class="settings-item">
+                <div class="st-left">
+                    <i class="fa-solid fa-globe st-icon"></i>
+                    <span>Язык</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
+            </div>
+
+            <div class="settings-item">
+                <div class="st-left">
+                    <i class="fa-regular fa-comment-dots st-icon"></i>
+                    <span>Поддержка</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
+            </div>
+
+            <div class="settings-item">
+                <div class="st-left">
+                    <i class="fa-regular fa-circle-question st-icon"></i>
+                    <span>Вопросы и ответы</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
+            </div>
+        </div>
     </div>
 
     <div id="screen-profile" class="screen">
@@ -192,7 +250,7 @@
         <button class="action-btn" onclick="sendOrder()">Далее</button>
     </div>
 
-    <div class="tab-bar">
+    <div class="tab-bar" id="tab-bar">
         <div class="tab-item active" onclick="switchTab('home')">
             <i class="fa-solid fa-house tab-icon"></i> Курсы
         </div>
@@ -206,12 +264,10 @@
         tg.expand();
 
         // 1. НАСТРОЙКИ ГОРОДОВ И ВАЛЮТ
-        // Rate - это примерный курс 1 доллара к местной валюте (для симуляции цен)
         const locations = [
             { id: 'msk', name: 'Россия, г. Москва', currency: 'RUB', symbol: '₽', rate: 98.5 },
             { id: 'spb', name: 'Россия, г. С-Петербург', currency: 'RUB', symbol: '₽', rate: 98.5 },
             { id: 'krd', name: 'Россия, г. Краснодар', currency: 'RUB', symbol: '₽', rate: 98.5 },
-            { id: 'nsk', name: 'Россия, г. Новосибирск', currency: 'RUB', symbol: '₽', rate: 98.5 },
             { id: 'dxb', name: 'ОАЭ, г. Дубай', currency: 'AED', symbol: 'dh', rate: 3.67 },
             { id: 'ist', name: 'Турция, г. Стамбул', currency: 'TRY', symbol: '₺', rate: 34.0 },
             { id: 'tbs', name: 'Грузия, г. Тбилиси', currency: 'GEL', symbol: '₾', rate: 2.7 },
@@ -220,7 +276,6 @@
             { id: 'bua', name: 'Аргентина, г. Буэнос-Айрес', currency: 'ARS', symbol: '$', rate: 980 }
         ];
 
-        // Базовые цены криптовалют в долларах (USD)
         const cryptoPricesUSD = {
             'USDT': 1.00,
             'BTC': 76500.00,
@@ -237,31 +292,31 @@
             'SOL': { name: 'Solana', net: 'SOL', color: 'bg-sol', icon: 'S' }
         };
 
-        // Текущее состояние
-        let currentLocation = locations[0]; // По умолчанию Москва
+        let currentLocation = locations[0]; 
         let currentCoin = 'USDT';
-        let isBuying = true; // true = Fiat -> Crypto
+        let isBuying = true; 
 
         // --- ИНИЦИАЛИЗАЦИЯ ---
         function init() {
-            // Установка юзера
             if (tg.initDataUnsafe.user) {
-                document.getElementById('username').innerText = tg.initDataUnsafe.user.first_name;
+                const user = tg.initDataUnsafe.user;
+                document.getElementById('username').innerText = user.first_name;
+                if(user.photo_url) {
+                    document.getElementById('user-avatar').style.backgroundImage = `url('${user.photo_url}')`;
+                }
             }
             renderLocationList();
             updateMainScreen();
         }
 
-        // --- РЕНДЕРИНГ СПИСКА ВАЛЮТ ---
+        // --- ЛОГИКА ЭКРАНОВ ---
         function updateMainScreen() {
             document.getElementById('current-city-text').innerText = currentLocation.name;
             const list = document.getElementById('coin-list');
             list.innerHTML = '';
 
-            // Генерируем карточки валют
             for (const [ticker, priceUSD] of Object.entries(cryptoPricesUSD)) {
                 const meta = cryptoMeta[ticker];
-                // Конвертируем цену в валюту выбранного города
                 const localPrice = (priceUSD * currentLocation.rate).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
                 
                 const item = document.createElement('div');
@@ -284,7 +339,31 @@
             }
         }
 
-        // --- ЭКРАН ВЫБОРА ГОРОДА ---
+        // --- ЭКРАН НАСТРОЕК (НОВОЕ) ---
+        function openSettingsScreen() {
+            document.getElementById('screen-home').classList.remove('active');
+            document.getElementById('screen-settings').classList.add('active');
+            document.getElementById('tab-bar').style.display = 'none'; // Скрываем меню
+            
+            tg.BackButton.show();
+            tg.BackButton.onClick(closeSettingsScreen);
+        }
+
+        function closeSettingsScreen() {
+            document.getElementById('screen-settings').classList.remove('active');
+            document.getElementById('screen-home').classList.add('active');
+            document.getElementById('tab-bar').style.display = 'flex'; // Возвращаем меню
+            
+            tg.BackButton.hide();
+        }
+        
+        // Переход из настроек в локации
+        function openLocationScreenFromSettings() {
+             document.getElementById('screen-settings').classList.remove('active');
+             openLocationScreen(true); // true = пришли из настроек
+        }
+
+        // --- ЭКРАН ЛОКАЦИЙ ---
         function renderLocationList() {
             const list = document.getElementById('city-list');
             list.innerHTML = '';
@@ -300,23 +379,36 @@
             });
         }
 
-        function openLocationScreen() {
-            renderLocationList(); // Обновить галочку
-            document.getElementById('screen-home').classList.remove('active');
+        let isFromSettings = false;
+
+        function openLocationScreen(fromSettings = false) {
+            isFromSettings = fromSettings;
+            renderLocationList();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('screen-locations').classList.add('active');
+            document.getElementById('tab-bar').style.display = 'none';
+            
             tg.BackButton.show();
             tg.BackButton.onClick(closeLocationScreen);
         }
 
         function closeLocationScreen() {
             document.getElementById('screen-locations').classList.remove('active');
-            document.getElementById('screen-home').classList.add('active');
-            tg.BackButton.hide();
+            
+            if(isFromSettings) {
+                document.getElementById('screen-settings').classList.add('active');
+                tg.BackButton.show();
+                tg.BackButton.onClick(closeSettingsScreen);
+            } else {
+                document.getElementById('screen-home').classList.add('active');
+                document.getElementById('tab-bar').style.display = 'flex';
+                tg.BackButton.hide();
+            }
         }
 
         function selectLocation(loc) {
             currentLocation = loc;
-            updateMainScreen(); // Обновить цены и валюту на главной
+            updateMainScreen();
             closeLocationScreen();
             tg.HapticFeedback.selectionChanged();
         }
@@ -324,14 +416,11 @@
         // --- ЛОГИКА ОБМЕНА ---
         function openExchangeModal(coin, usdPrice) {
             currentCoin = coin;
-            isBuying = true; // Сброс на покупку
-            
+            isBuying = true; 
             document.getElementById('modal-title').innerText = `Обмен ${coin}`;
             document.getElementById('input-top').value = '';
             document.getElementById('input-bottom').value = '';
-            
             updateSwapUI();
-
             document.getElementById('overlay').style.display = 'block';
             setTimeout(() => document.getElementById('modal').classList.add('active'), 10);
             tg.HapticFeedback.impactOccurred('medium');
@@ -344,7 +433,6 @@
 
         function swapDirection() {
             isBuying = !isBuying;
-            // Очищаем поля
             document.getElementById('input-top').value = '';
             document.getElementById('input-bottom').value = '';
             updateSwapUI();
@@ -352,16 +440,13 @@
         }
 
         function updateSwapUI() {
-            const fiat = currentLocation.currency; // RUB, AED, etc.
-            
+            const fiat = currentLocation.currency;
             if (isBuying) {
-                // Покупаем Крипту за Фиат
                 document.getElementById('label-top').innerText = `Отдаете (${fiat})`;
                 document.getElementById('currency-top').innerText = fiat;
                 document.getElementById('label-bottom').innerText = `Получаете (${currentCoin})`;
                 document.getElementById('currency-bottom').innerText = currentCoin;
             } else {
-                // Продаем Крипту за Фиат
                 document.getElementById('label-top').innerText = `Отдаете (${currentCoin})`;
                 document.getElementById('currency-top').innerText = currentCoin;
                 document.getElementById('label-bottom').innerText = `Получаете (${fiat})`;
@@ -372,19 +457,13 @@
         function calculate() {
             const val = parseFloat(document.getElementById('input-top').value);
             const out = document.getElementById('input-bottom');
-            
             if (!val) { out.value = ''; return; }
-
-            // Цена монеты в текущей валюте города
             const localPrice = cryptoPricesUSD[currentCoin] * currentLocation.rate;
-
             let res;
             if (isBuying) {
-                // Делим фиат на цену
                 res = val / localPrice;
                 out.value = res.toFixed(6);
             } else {
-                // Умножаем крипту на цену
                 res = val * localPrice;
                 out.value = res.toFixed(2);
             }
@@ -393,40 +472,28 @@
         function sendOrder() {
             const valIn = document.getElementById('input-top').value;
             const valOut = document.getElementById('input-bottom').value;
-            
             if(!valIn) return;
-
             const fiatCode = currentLocation.currency;
-
             const data = {
                 type: isBuying ? 'BUY' : 'SELL',
                 coin: currentCoin,
                 amount_in: valIn,
                 amount_out: valOut,
-                // Если покупаем: отдаем FIAT, получаем CRYPTO
-                // Если продаем: отдаем CRYPTO, получаем FIAT
                 currency_in: isBuying ? fiatCode : currentCoin,
                 currency_out: isBuying ? currentCoin : fiatCode,
                 city: currentLocation.name
             };
-
             tg.sendData(JSON.stringify(data));
             tg.close();
         }
 
         function switchTab(screen) {
-            if(screen === 'home') {
-                document.getElementById('screen-profile').classList.remove('active');
-                document.getElementById('screen-home').classList.add('active');
-            } else {
-                document.getElementById('screen-home').classList.remove('active');
-                document.getElementById('screen-profile').classList.add('active');
-            }
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            if(screen === 'home') document.getElementById('screen-home').classList.add('active');
+            if(screen === 'profile') document.getElementById('screen-profile').classList.add('active');
         }
 
-        // Запуск
         init();
-
     </script>
 </body>
 </html>
