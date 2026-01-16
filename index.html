@@ -73,7 +73,7 @@
         .bg-trc { background: var(--red); }
         .bg-erc { background: var(--green); }
         .bg-btc { background: #F7931A; }
-        .bg-eth { background: #494949; } /* Серый как на скрине */
+        .bg-eth { background: #494949; } 
         .bg-ton { background: #0098EA; }
 
         /* Bottom Buttons */
@@ -87,7 +87,7 @@
         .btn-dark { background: var(--card); color: white; }
         .btn-main:active { transform: scale(0.98); opacity: 0.9; }
 
-        /* Currency Selection List (Styled like screenshot) */
+        /* Selection List Styling */
         .selection-list { padding: 0 16px; }
         .selection-item {
             background: var(--card); padding: 12px 16px; border-radius: 14px; margin-bottom: 8px;
@@ -127,20 +127,27 @@
             background: var(--input-bg); border-radius: 16px; padding: 12px 16px; margin-bottom: 8px;
             display: flex; justify-content: space-between; align-items: center; height: 75px;
             border: 1px solid transparent;
+            position: relative; /* Важно для z-index */
         }
         .input-card:focus-within { border-color: #444; }
-        .input-left { flex-grow: 1; }
+        .input-left { flex-grow: 1; z-index: 1; }
+        
         .input-label { font-size: 12px; color: var(--gray); margin-bottom: 4px; }
         .input-field {
             background: transparent; border: none; color: white;
             font-size: 24px; font-weight: 700; width: 100%; outline: none; padding: 0;
         }
         
+        /* КНОПКА ВЫБОРА (ИСПРАВЛЕНА) */
         .currency-selector-btn {
-            background: #1C1C1E; padding: 6px 12px; border-radius: 20px;
+            background: #1C1C1E; padding: 8px 12px; border-radius: 20px;
             display: flex; align-items: center; gap: 8px; cursor: pointer;
             font-size: 14px; font-weight: 700; margin-left: 10px;
+            z-index: 10; /* ЧТОБЫ БЫЛА ПОВЕРХ ВСЕГО */
+            position: relative;
+            border: 1px solid #333;
         }
+        .currency-selector-btn:active { background: #333; }
         .mini-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: bold; }
 
         .swap-btn-circle {
@@ -253,7 +260,7 @@
                     <div class="input-label" id="label-top">Отдаете</div>
                     <input type="number" id="input-top" class="input-field" placeholder="0" oninput="calculate()">
                 </div>
-                <div class="currency-selector-btn" onclick="openCurrencySelect('top')">
+                <div class="currency-selector-btn" id="btn-top" onclick="openCurrencySelect('top')">
                     <div class="mini-icon" id="icon-top"></div>
                     <span id="ticker-top">USDT</span>
                     <i class="fa-solid fa-chevron-right" style="font-size: 10px; color: #666;"></i>
@@ -269,7 +276,7 @@
                     <div class="input-label" id="label-bottom">Получаете</div>
                     <input type="text" id="input-bottom" class="input-field" placeholder="0" readonly style="color: var(--orange);">
                 </div>
-                <div class="currency-selector-btn" onclick="openCurrencySelect('bottom')">
+                <div class="currency-selector-btn" id="btn-bottom" onclick="openCurrencySelect('bottom')">
                     <div class="mini-icon" id="icon-bottom"></div>
                     <span id="ticker-bottom" style="color: var(--orange);">RUB</span>
                     <i class="fa-solid fa-chevron-right" style="font-size: 10px; color: #666;"></i>
@@ -360,6 +367,10 @@
 
         // --- EXCHANGE MODAL ---
         function openExchangeModal() {
+            // Re-init currencies if location changed
+            if(bottomCurrency.type === 'fiat') bottomCurrency.code = currentLocation.currency;
+            if(topCurrency.type === 'fiat') topCurrency.code = currentLocation.currency;
+
             updateExchangeUI();
             document.getElementById('overlay').style.display = 'block';
             setTimeout(() => document.getElementById('modal').classList.add('active'), 10);
@@ -378,7 +389,7 @@
             
             if (currency.type === 'crypto') {
                 const meta = coinsMeta[currency.code];
-                textEl.innerText = meta.ticker; // Short ticker like USDT
+                textEl.innerText = meta.ticker; 
                 iconEl.className = `mini-icon ${meta.color}`;
                 iconEl.innerHTML = meta.icon;
             } else {
@@ -403,19 +414,19 @@
 
         // --- CURRENCY SELECT SCREEN ---
         function openCurrencySelect(target) {
+            // !!! THIS IS THE IMPORTANT FIX !!!
+            // We force the list to open
             targetSelector = target;
             const isTop = target === 'top';
             
-            // Set Title based on action
             document.getElementById('currency-select-title').innerText = isTop ? 'Отдаете' : 'Получаете';
 
             const list = document.getElementById('select-currency-list');
             list.innerHTML = '';
 
-            // Current selected currency code
             const currentSelectedCode = isTop ? topCurrency.code : bottomCurrency.code;
 
-            // 1. Fiat Option (Cash)
+            // 1. Fiat
             const fiatItem = document.createElement('div');
             fiatItem.className = 'selection-item';
             fiatItem.onclick = () => selectCurrency({ type: 'fiat', code: currentLocation.currency });
@@ -434,7 +445,7 @@
             `;
             list.appendChild(fiatItem);
 
-            // 2. Crypto Options
+            // 2. Crypto
             for (const key of Object.keys(cryptoPricesUSD)) {
                 const meta = coinsMeta[key];
                 const item = document.createElement('div');
@@ -484,10 +495,7 @@
             const rate = currentLocation.rate;
             let result = 0;
 
-            // Helper to get USD price
-            const getPrice = (code, type) => { // type: 'buy' or 'sell'
-                return cryptoPricesUSD[code][type];
-            };
+            const getPrice = (code, type) => cryptoPricesUSD[code][type];
 
             // 1. Fiat -> Crypto
             if (topCurrency.type === 'fiat' && bottomCurrency.type === 'crypto') {
@@ -508,7 +516,6 @@
                 result = (val * priceIn) / priceOut;
                 out.value = result.toFixed(6);
             }
-            // 4. Fiat -> Fiat
             else {
                 out.value = val;
             }
@@ -590,10 +597,6 @@
         }
         function selectLocation(loc) {
             currentLocation = loc;
-            // Сбрасываем выбор фиата при смене города, чтобы не было ошибок
-            if(topCurrency.type === 'fiat') topCurrency.code = loc.currency;
-            if(bottomCurrency.type === 'fiat') bottomCurrency.code = loc.currency;
-            
             updateDashboard();
             closeLocationScreen();
             tg.HapticFeedback.selectionChanged();
