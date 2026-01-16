@@ -7,9 +7,9 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- ОСНОВНЫЕ СТИЛИ --- */
         :root {
             --bg: #0F0F10;
+            --modal-bg: #141414;
             --card: #1C1C1E;
             --input-bg: #2C2C2E;
             --orange: #FF5500;
@@ -23,61 +23,59 @@
         
         body {
             background: var(--bg); color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-            margin: 0; padding: 0; 
-            padding-bottom: 40px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; padding: 0; padding-bottom: 40px;
             user-select: none;
         }
 
         /* --- ЭКРАНЫ --- */
-        .screen { display: none; padding-top: 10px; animation: fadeIn 0.3s; }
+        .screen { display: none; padding-top: 10px; animation: fadeIn 0.2s ease-out; }
         .screen.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* HEADER & DASHBOARD */
         .header { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
         .user-block { display: flex; align-items: center; gap: 10px; }
         .avatar { width: 36px; height: 36px; border-radius: 50%; background: #333; background-size: cover; }
-        .settings-btn { width: 36px; height: 36px; background: var(--card); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;}
+        .settings-btn { width: 36px; height: 36px; background: var(--card); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        /* ЛОКАЦИЯ */
         .location-selector {
             margin: 0 16px 20px; background: var(--card); padding: 12px 16px;
             border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 10px;
             font-weight: 600; font-size: 14px; cursor: pointer; border: 1px solid #333;
         }
 
-        /* ТАБЛИЦА КУРСОВ */
+        /* ТАБЛИЦА КУРСОВ (Мелкий шрифт, как просил) */
         .market-header {
             display: grid; grid-template-columns: 1.5fr 1fr 1fr;
             padding: 0 16px; margin-bottom: 8px;
-            color: var(--gray); font-size: 12px; font-weight: 500;
+            color: var(--gray); font-size: 11px; font-weight: 500; text-transform: uppercase;
         }
         .header-col-right { text-align: right; }
 
         .coin-list { padding: 0 16px 10px 16px; }
         .coin-row {
             display: grid; grid-template-columns: 1.5fr 1fr 1fr;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #2C2C2E;
+            align-items: center; padding: 12px 0;
+            border-bottom: 1px solid #222;
         }
         .coin-row:last-child { border-bottom: none; }
 
         .coin-info { display: flex; align-items: center; gap: 10px; }
-        .coin-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: bold; flex-shrink: 0; }
+        .coin-icon-small { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: bold; flex-shrink: 0; }
         .coin-text { display: flex; flex-direction: column; }
-        .coin-name { font-weight: 700; font-size: 13px; line-height: 1.2; }
+        .coin-name { font-weight: 700; font-size: 13px; }
         .coin-net { font-size: 10px; color: var(--gray); }
-        .price-col { text-align: right; font-weight: 600; font-size: 13px; }
+        .price-col { text-align: right; font-weight: 600; font-size: 12px; }
 
-        /* ЦВЕТА ИКОНОК */
+        /* COLORS */
         .bg-trc { background: var(--red); }
         .bg-erc { background: var(--green); }
         .bg-btc { background: #F7931A; }
-        .bg-eth { background: #494949; } 
+        .bg-eth { background: #4F4F4F; }
         .bg-ton { background: #0098EA; }
 
-        /* КНОПКИ ГЛАВНОГО ЭКРАНА */
+        /* КНОПКИ ВНИЗУ */
         .bottom-actions { padding: 16px; margin-top: 10px; }
         .btn-main {
             width: 100%; padding: 16px; border-radius: 14px; border: none;
@@ -88,21 +86,25 @@
         .btn-dark { background: var(--card); color: white; }
         .btn-main:active { transform: scale(0.98); opacity: 0.9; }
 
-        /* ЭЛЕМЕНТЫ СПИСКА (ВЫБОР) */
+        /* СПИСОК ВЫБОРА ВАЛЮТ (Стиль как на фото 2 и 3) */
         .selection-list { padding: 0 16px; }
         .selection-item {
-            background: var(--card); padding: 12px 16px; border-radius: 14px; margin-bottom: 8px;
+            background: var(--card); padding: 14px 16px; border-radius: 16px; margin-bottom: 8px;
             display: flex; justify-content: space-between; align-items: center;
             cursor: pointer;
         }
         .selection-item:active { background: #2c2c2e; }
         
-        .sel-left { display: flex; align-items: center; gap: 12px; }
+        .sel-left { display: flex; align-items: center; gap: 14px; }
         .sel-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; font-weight: bold; }
         .sel-text { display: flex; flex-direction: column; }
         .sel-name { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
-        .sel-sub { font-size: 13px; color: var(--gray); }
-        .check-circle { width: 20px; height: 20px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-size: 10px; }
+        .sel-sub { font-size: 12px; color: var(--gray); text-transform: uppercase; }
+        
+        .check-circle { 
+            width: 22px; height: 22px; background: white; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; color: black; font-size: 12px;
+        }
 
         /* МОДАЛЬНОЕ ОКНО */
         .modal-bg {
@@ -112,45 +114,46 @@
         }
         .modal {
             position: fixed; bottom: -100%; left: 0; width: 100%;
-            background: #141414; border-radius: 24px 24px 0 0; padding: 24px;
+            background: var(--modal-bg); border-radius: 24px 24px 0 0; padding: 24px;
             transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 101;
             border-top: 1px solid #333;
         }
         .modal.active { bottom: 0; }
 
-        /* ПОЛЯ ВВОДА В ОБМЕННИКЕ */
+        /* ОКНО ОБМЕНА (Поля ввода) */
         .swap-container { position: relative; margin-top: 20px; }
         .input-card {
-            background: var(--input-bg); border-radius: 16px; padding: 12px 16px; margin-bottom: 8px;
-            display: flex; justify-content: space-between; align-items: center; height: 75px;
-            border: 1px solid transparent;
+            background: var(--input-bg); border-radius: 16px; padding: 16px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center; height: 80px;
+            border: 1px solid transparent; position: relative;
         }
         .input-card:focus-within { border-color: #444; }
-        .input-left { flex-grow: 1; }
-        .input-label { font-size: 12px; color: var(--gray); margin-bottom: 4px; }
+        
+        .input-left { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+        .input-label { font-size: 12px; color: var(--gray); margin-bottom: 6px; }
         .input-field {
             background: transparent; border: none; color: white;
-            font-size: 24px; font-weight: 700; width: 100%; outline: none; padding: 0;
+            font-size: 26px; font-weight: 700; width: 100%; outline: none; padding: 0; margin: 0;
         }
         
-        /* КНОПКА ВЫБОРА ВАЛЮТЫ (С ИСПРАВЛЕНИЕМ) */
-        .currency-selector-btn {
-            background: #1C1C1E; padding: 8px 12px; border-radius: 20px;
+        /* КНОПКА ВЫБОРА ВНУТРИ ПОЛЯ (ВАЖНО: Z-INDEX) */
+        .currency-btn {
+            background: #1C1C1E; padding: 8px 12px 8px 8px; border-radius: 24px;
             display: flex; align-items: center; gap: 8px; cursor: pointer;
-            font-size: 14px; font-weight: 700; margin-left: 10px;
             border: 1px solid #333;
-            /* ВАЖНОЕ ИСПРАВЛЕНИЕ: ПОВЕРХ ВСЕГО */
-            position: relative; 
-            z-index: 10;
+            z-index: 10; position: relative; /* Чтобы точно нажималась */
+            min-width: 90px; justify-content: space-between;
         }
-        .currency-selector-btn:active { background: #333; }
-        .mini-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: bold; }
+        .currency-btn:active { background: #333; }
+        .mini-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: bold; }
+        .ticker-text { font-weight: 600; font-size: 14px; }
 
-        .swap-btn-circle {
+        /* Кнопка смены местами (Стрелка) */
+        .swap-circle {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 40px; height: 40px; background: #1C1C1E; border: 1px solid #333;
+            width: 40px; height: 40px; background: #1C1C1E; border: 4px solid var(--modal-bg);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 14px; cursor: pointer; z-index: 5;
+            color: white; font-size: 14px; cursor: pointer; z-index: 20;
         }
 
         .action-btn {
@@ -165,7 +168,6 @@
             display: flex; align-items: center; justify-content: space-between;
             font-weight: 600; font-size: 14px; cursor: pointer;
         }
-        .st-icon { width: 24px; text-align: center; margin-right: 10px; }
     </style>
 </head>
 <body>
@@ -176,7 +178,7 @@
                 <div class="avatar" id="user-avatar"></div>
                 <div>
                     <div style="font-weight: 700; font-size: 14px;" id="username">Гость</div>
-                    <div style="font-size: 12px; color: var(--gray);" id="user-tag">@loading</div>
+                    <div style="font-size: 12px; color: var(--gray);" id="user-tag">...</div>
                 </div>
             </div>
             <div class="settings-btn" onclick="openSettingsScreen()"><i class="fa-solid fa-gear"></i></div>
@@ -205,21 +207,23 @@
         </div>
     </div>
 
+    <div id="screen-currency-select" class="screen">
+        <div class="header">
+            <div style="font-size: 18px; font-weight: 700;" id="select-title">Выберите валюту</div>
+            <div class="settings-btn" onclick="closeCurrencySelect()">✕</div>
+        </div>
+        <div style="padding: 0 16px 16px; color: #8E8E93; font-size: 13px;" id="select-subtitle">
+            Выберите валюту из списка
+        </div>
+        <div class="selection-list" id="select-list"></div>
+    </div>
+
     <div id="screen-locations" class="screen">
         <div class="header">
             <div style="font-size: 18px; font-weight: 700;">Локация</div>
             <div class="settings-btn" onclick="closeLocationScreen()">✕</div>
         </div>
-        <div style="padding: 0 16px 10px; color: var(--gray); font-size: 12px;">Выберите офис для обмена</div>
         <div class="selection-list" id="city-list"></div>
-    </div>
-
-    <div id="screen-currency-select" class="screen">
-        <div class="header">
-            <div style="font-size: 18px; font-weight: 700;" id="currency-select-title">Выберите валюту</div>
-            <div class="settings-btn" onclick="closeCurrencySelect()">✕</div>
-        </div>
-        <div class="selection-list" id="select-currency-list"></div>
     </div>
 
     <div id="screen-settings" class="screen">
@@ -229,23 +233,23 @@
         </div>
         <div class="settings-list">
             <div class="settings-item" onclick="openLocationScreenFromSettings()">
-                <div><i class="fa-solid fa-location-dot st-icon"></i>Локация по умолчанию</div>
-                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
+                <div><i class="fa-solid fa-location-dot" style="width:24px;"></i> Локация по умолчанию</div>
+                <i class="fa-solid fa-chevron-right" style="color:#666;"></i>
             </div>
             <div class="settings-item">
-                <div><i class="fa-solid fa-book st-icon"></i>Заявки</div>
-                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
+                <div><i class="fa-solid fa-book" style="width:24px;"></i> Заявки</div>
+                <i class="fa-solid fa-chevron-right" style="color:#666;"></i>
             </div>
             <div class="settings-item" onclick="openSupport()">
-                <div><i class="fa-regular fa-comment-dots st-icon"></i>Поддержка</div>
-                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
+                <div><i class="fa-regular fa-comment-dots" style="width:24px;"></i> Поддержка</div>
+                <i class="fa-solid fa-chevron-right" style="color:#666;"></i>
             </div>
         </div>
     </div>
 
     <div class="modal-bg" id="overlay" onclick="closeModal()"></div>
     <div class="modal" id="modal">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 24px;">
             <h2 style="margin: 0; font-size: 20px;">Обмен</h2>
             <div onclick="closeModal()" style="padding: 5px; cursor: pointer;">✕</div>
         </div>
@@ -256,14 +260,16 @@
                     <div class="input-label" id="label-top">Отдаете</div>
                     <input type="number" id="input-top" class="input-field" placeholder="0" oninput="calculate()">
                 </div>
-                <div class="currency-selector-btn" onclick="openCurrencySelect('top')">
-                    <div class="mini-icon" id="icon-top"></div>
-                    <span id="ticker-top">USDT</span>
+                <div class="currency-btn" onclick="openSelect('top')">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="mini-icon" id="icon-top"></div>
+                        <span class="ticker-text" id="ticker-top">USDT</span>
+                    </div>
                     <i class="fa-solid fa-chevron-right" style="font-size: 10px; color: #666;"></i>
                 </div>
             </div>
 
-            <div class="swap-btn-circle" onclick="swapCurrencies()">
+            <div class="swap-circle" onclick="swap()">
                 <i class="fa-solid fa-arrow-down"></i>
             </div>
 
@@ -272,9 +278,11 @@
                     <div class="input-label" id="label-bottom">Получаете</div>
                     <input type="text" id="input-bottom" class="input-field" placeholder="0" readonly style="color: var(--orange);">
                 </div>
-                <div class="currency-selector-btn" onclick="openCurrencySelect('bottom')">
-                    <div class="mini-icon" id="icon-bottom"></div>
-                    <span id="ticker-bottom" style="color: var(--orange);">RUB</span>
+                <div class="currency-btn" onclick="openSelect('bottom')">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="mini-icon" id="icon-bottom"></div>
+                        <span class="ticker-text" id="ticker-bottom">RUB</span>
+                    </div>
                     <i class="fa-solid fa-chevron-right" style="font-size: 10px; color: #666;"></i>
                 </div>
             </div>
@@ -286,11 +294,11 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.enableClosingConfirmation();
 
-        // --- КОНФИГУРАЦИЯ ---
-        const SUPPORT_USERNAME = 'YOUR_USERNAME'; 
+        // НАСТРОЙКИ
+        const SUPPORT_USERNAME = 'rexes_support';
 
+        // ДАННЫЕ ЛОКАЦИЙ
         const locations = [
             { id: 'msk', name: 'Россия, г. Москва', currency: 'RUB', symbol: '₽', rate: 98.5 },
             { id: 'dxb', name: 'ОАЭ, г. Дубай', currency: 'AED', symbol: 'dh', rate: 3.67 },
@@ -299,27 +307,23 @@
             { id: 'evn', name: 'Армения, г. Ереван', currency: 'AMD', symbol: '֏', rate: 387 }
         ];
 
-        const cryptoPricesUSD = {
-            'USDT_TRC20': { buy: 1.002, sell: 0.998 },
-            'BTC': { buy: 76500.00, sell: 75200.00 },
-            'ETH': { buy: 2950.00, sell: 2890.00 },
-            'USDT_ERC20': { buy: 1.005, sell: 0.995 }
-        };
-
-        const coinsMeta = {
-            'USDT_TRC20': { name: 'Tether', net: 'USDT TRC20', color: 'bg-trc', icon: 'T', ticker: 'USDT' },
-            'BTC': { name: 'Bitcoin', net: 'BTC', color: 'bg-btc', icon: '<i class="fa-brands fa-bitcoin"></i>', ticker: 'BTC' },
-            'ETH': { name: 'Ethereum', net: 'ETH', color: 'bg-eth', icon: '<i class="fa-brands fa-ethereum"></i>', ticker: 'ETH' },
-            'USDT_ERC20': { name: 'Tether', net: 'USDT ERC20', color: 'bg-erc', icon: 'T', ticker: 'USDT' }
-        };
+        // ДАННЫЕ КРИПТЫ
+        const cryptoData = [
+            { id: 'USDT_TRC20', name: 'Tether', net: 'USDT TRC20', ticker: 'USDT', color: 'bg-trc', icon: 'T', priceBuy: 1.002, priceSell: 0.998 },
+            { id: 'BTC', name: 'Bitcoin', net: 'BTC', ticker: 'BTC', color: 'bg-btc', icon: '<i class="fa-brands fa-bitcoin"></i>', priceBuy: 76500, priceSell: 75200 },
+            { id: 'ETH', name: 'Ethereum', net: 'ETH', ticker: 'ETH', color: 'bg-eth', icon: '<i class="fa-brands fa-ethereum"></i>', priceBuy: 2950, priceSell: 2890 },
+            { id: 'USDT_ERC20', name: 'Tether', net: 'USDT ERC20', ticker: 'USDT', color: 'bg-erc', icon: 'T', priceBuy: 1.005, priceSell: 0.995 }
+        ];
 
         let currentLocation = locations[0]; 
         
-        // Начальное состояние
-        let topCurrency = { type: 'crypto', code: 'USDT_TRC20' };
-        let bottomCurrency = { type: 'fiat', code: 'RUB' };
-        let targetSelector = null;
+        // СОСТОЯНИЕ ОБМЕНА
+        // isBuying = true -> Вверху ФИАТ (RUB), Внизу КРИПТА (USDT)
+        // isBuying = false -> Вверху КРИПТА (USDT), Внизу ФИАТ (RUB)
+        let isBuying = false; 
+        let selectedCryptoId = 'USDT_TRC20';
 
+        // --- ИНИЦИАЛИЗАЦИЯ ---
         function init() {
             if (tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
@@ -336,67 +340,79 @@
             const list = document.getElementById('coin-list');
             list.innerHTML = '';
 
-            for (const [key, prices] of Object.entries(cryptoPricesUSD)) {
-                const meta = coinsMeta[key];
-                const buyPrice = (prices.buy * currentLocation.rate).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
-                const sellPrice = (prices.sell * currentLocation.rate).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+            cryptoData.forEach(coin => {
+                const buyPrice = (coin.priceBuy * currentLocation.rate).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+                const sellPrice = (coin.priceSell * currentLocation.rate).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
 
                 const item = document.createElement('div');
                 item.className = 'coin-row';
                 item.innerHTML = `
                     <div class="coin-info">
-                        <div class="coin-icon ${meta.color}">${meta.icon}</div>
+                        <div class="coin-icon-small ${coin.color}">${coin.icon}</div>
                         <div class="coin-text">
-                            <span class="coin-name">${meta.name}</span>
-                            <span class="coin-net">${meta.net}</span>
+                            <span class="coin-name">${coin.name}</span>
+                            <span class="coin-net">${coin.net}</span>
                         </div>
                     </div>
                     <div class="price-col">${buyPrice} ${currentLocation.symbol}</div>
-                    <div class="price-col" style="color: #8E8E93;">${sellPrice} ${currentLocation.symbol}</div>
+                    <div class="price-col" style="color:#8E8E93;">${sellPrice} ${currentLocation.symbol}</div>
                 `;
                 list.appendChild(item);
-            }
+            });
         }
 
+        // --- ЛОГИКА ОБМЕНА ---
         function openExchangeModal() {
-            // Обновляем фиат, если город поменялся
-            if(bottomCurrency.type === 'fiat') bottomCurrency.code = currentLocation.currency;
-            if(topCurrency.type === 'fiat') topCurrency.code = currentLocation.currency;
-
+            // При открытии сбрасываем значения
+            document.getElementById('input-top').value = '';
+            document.getElementById('input-bottom').value = '';
             updateExchangeUI();
+            
             document.getElementById('overlay').style.display = 'block';
             setTimeout(() => document.getElementById('modal').classList.add('active'), 10);
             tg.HapticFeedback.impactOccurred('medium');
         }
 
         function updateExchangeUI() {
-            renderSelectorBtn('top', topCurrency);
-            renderSelectorBtn('bottom', bottomCurrency);
+            const crypto = cryptoData.find(c => c.id === selectedCryptoId);
+            const fiat = currentLocation;
+
+            // Определяем, что где показывать
+            const topData = isBuying ? fiat : crypto;
+            const bottomData = isBuying ? crypto : fiat;
+
+            renderBtn('top', topData, isBuying); // isBuying=true значит вверху фиат
+            renderBtn('bottom', bottomData, !isBuying);
+            
+            // Меняем заголовки кнопок выбора
+            document.getElementById('label-top').innerText = isBuying ? 'Отдаете (Наличные)' : 'Отдаете (Крипта)';
+            document.getElementById('label-bottom').innerText = isBuying ? 'Получаете (Крипта)' : 'Получаете (Наличные)';
+            
             calculate();
         }
 
-        function renderSelectorBtn(position, currency) {
-            const iconEl = document.getElementById(`icon-${position}`);
-            const textEl = document.getElementById(`ticker-${position}`);
+        function renderBtn(pos, data, isFiat) {
+            const iconEl = document.getElementById(`icon-${pos}`);
+            const textEl = document.getElementById(`ticker-${pos}`);
             
-            if (currency.type === 'crypto') {
-                const meta = coinsMeta[currency.code];
-                textEl.innerText = meta.ticker; 
-                iconEl.className = `mini-icon ${meta.color}`;
-                iconEl.innerHTML = meta.icon;
-            } else {
-                textEl.innerText = currency.code;
-                iconEl.className = `mini-icon`;
+            if (isFiat) {
+                // Рендер Фиата
+                iconEl.className = 'mini-icon';
                 iconEl.style.background = '#333';
-                iconEl.innerHTML = currentLocation.symbol;
+                iconEl.innerHTML = data.symbol;
+                textEl.innerText = data.currency;
+            } else {
+                // Рендер Крипты
+                iconEl.className = `mini-icon ${data.color}`;
+                iconEl.innerHTML = data.icon;
+                textEl.innerText = data.ticker;
             }
         }
 
-        function swapCurrencies() {
-            const temp = topCurrency;
-            topCurrency = bottomCurrency;
-            bottomCurrency = temp;
+        function swap() {
+            isBuying = !isBuying; // Переворачиваем направление
             
+            // Чистим поля
             document.getElementById('input-top').value = '';
             document.getElementById('input-bottom').value = '';
             
@@ -404,142 +420,158 @@
             tg.HapticFeedback.selectionChanged();
         }
 
-        // --- ЛОГИКА ОТКРЫТИЯ СПИСКА ---
-        function openCurrencySelect(target) {
-            targetSelector = target;
-            const currencyObject = target === 'top' ? topCurrency : bottomCurrency;
-            const isCrypto = currencyObject.type === 'crypto';
+        function calculate() {
+            const val = parseFloat(document.getElementById('input-top').value);
+            const out = document.getElementById('input-bottom');
+            if (!val) { out.value = ''; return; }
 
-            // Если в слоте стоит КРИПТА -> Показываем только Крипту
-            // Если в слоте стоит ФИАТ -> Показываем только Фиат
-            
-            document.getElementById('currency-select-title').innerText = target === 'top' ? 'Отдаете' : 'Получаете';
+            const crypto = cryptoData.find(c => c.id === selectedCryptoId);
+            const rate = currentLocation.rate;
 
-            const list = document.getElementById('select-currency-list');
-            list.innerHTML = '';
-
-            const currentSelectedCode = currencyObject.code;
-
-            if (!isCrypto) {
-                // ПОКАЗЫВАЕМ ТОЛЬКО ФИАТ (Текущий)
-                const fiatItem = document.createElement('div');
-                fiatItem.className = 'selection-item';
-                fiatItem.onclick = () => selectCurrency({ type: 'fiat', code: currentLocation.currency });
-                
-                const isSelected = currentSelectedCode === currentLocation.currency;
-                
-                fiatItem.innerHTML = `
-                    <div class="sel-left">
-                        <div class="sel-icon" style="background: #333;">${currentLocation.symbol}</div>
-                        <div class="sel-text">
-                            <span class="sel-name">${currentLocation.currency}</span>
-                            <span class="sel-sub">Наличные</span>
-                        </div>
-                    </div>
-                    ${isSelected ? '<div class="check-circle"><i class="fa-solid fa-check"></i></div>' : ''}
-                `;
-                list.appendChild(fiatItem);
+            let result = 0;
+            if (isBuying) {
+                // Fiat -> Crypto (Делим на цену продажи нам)
+                const price = crypto.priceBuy * rate;
+                result = val / price;
+                out.value = result.toFixed(6);
             } else {
-                // ПОКАЗЫВАЕМ ТОЛЬКО КРИПТУ
-                for (const key of Object.keys(cryptoPricesUSD)) {
-                    const meta = coinsMeta[key];
-                    const item = document.createElement('div');
-                    item.className = 'selection-item';
-                    item.onclick = () => selectCurrency({ type: 'crypto', code: key });
-                    
-                    const isSelected = currentSelectedCode === key;
+                // Crypto -> Fiat (Умножаем на цену покупки у нас)
+                const price = crypto.priceSell * rate;
+                result = val * price;
+                out.value = result.toFixed(2);
+            }
+        }
 
-                    item.innerHTML = `
-                        <div class="sel-left">
-                            <div class="sel-icon ${meta.color}">${meta.icon}</div>
-                            <div class="sel-text">
-                                <span class="sel-name">${meta.name}</span>
-                                <span class="sel-sub">${meta.net}</span>
-                            </div>
-                        </div>
-                        ${isSelected ? '<div class="check-circle"><i class="fa-solid fa-check"></i></div>' : ''}
-                    `;
-                    list.appendChild(item);
-                }
+        // --- ЛОГИКА ОТКРЫТИЯ СПИСКА (САМОЕ ВАЖНОЕ) ---
+        let currentTargetPos = '';
+
+        function openSelect(pos) {
+            currentTargetPos = pos;
+            
+            // Логика: что открывать?
+            // Если isBuying = false (Крипта -> Фиат):
+            //   Top (Крипта) -> Открыть список Крипты
+            //   Bottom (Фиат) -> Открыть список Фиата (Локаций)
+            
+            let showCryptoList = false;
+            
+            if (pos === 'top') {
+                showCryptoList = !isBuying; // Если НЕ покупаем, значит вверху крипта
+            } else {
+                showCryptoList = isBuying; // Если покупаем, значит внизу крипта
             }
 
+            renderSelectionList(showCryptoList);
+            
             document.getElementById('screen-currency-select').classList.add('active');
             tg.BackButton.show();
             tg.BackButton.onClick(closeCurrencySelect);
         }
 
-        function selectCurrency(currencyObj) {
-            if (targetSelector === 'top') topCurrency = currencyObj;
-            else bottomCurrency = currencyObj;
+        function renderSelectionList(showCrypto) {
+            const list = document.getElementById('select-list');
+            list.innerHTML = '';
+            
+            const title = showCrypto ? 'Выберите валюту, которую хотите ' + (isBuying ? 'получить' : 'отдать') : 'Национальная валюта';
+            document.getElementById('select-title').innerText = showCrypto ? 'Валюта' : 'Локация';
+            document.getElementById('select-subtitle').innerText = title;
 
+            if (showCrypto) {
+                // РИСУЕМ СПИСОК КРИПТЫ (Как на фото 3)
+                cryptoData.forEach(coin => {
+                    const el = document.createElement('div');
+                    el.className = 'selection-item';
+                    el.onclick = () => selectCrypto(coin.id);
+                    const isSelected = selectedCryptoId === coin.id;
+                    
+                    el.innerHTML = `
+                        <div class="sel-left">
+                            <div class="sel-icon ${coin.color}">${coin.icon}</div>
+                            <div class="sel-text">
+                                <span class="sel-name">${coin.name}</span>
+                                <span class="sel-sub">${coin.net}</span>
+                            </div>
+                        </div>
+                        ${isSelected ? '<div class="check-circle"><i class="fa-solid fa-check"></i></div>' : ''}
+                    `;
+                    list.appendChild(el);
+                });
+            } else {
+                // РИСУЕМ СПИСОК ГОРОДОВ (ФИАТ) (Как на фото 2)
+                locations.forEach(loc => {
+                    const el = document.createElement('div');
+                    el.className = 'selection-item';
+                    el.onclick = () => selectLocation(loc); // Это обновит и главный экран
+                    const isSelected = currentLocation.id === loc.id;
+                    
+                    el.innerHTML = `
+                        <div class="sel-left">
+                            <div class="sel-text">
+                                <span class="sel-name">${loc.name}</span>
+                            </div>
+                        </div>
+                        ${isSelected ? '<div class="check-circle"><i class="fa-solid fa-check"></i></div>' : ''}
+                    `;
+                    list.appendChild(el);
+                });
+            }
+        }
+
+        function selectCrypto(id) {
+            selectedCryptoId = id;
             updateExchangeUI();
             closeCurrencySelect();
         }
 
+        function selectLocation(loc) {
+            currentLocation = loc;
+            updateDashboard(); // Обновляем главную
+            updateExchangeUI(); // Обновляем модалку если открыта
+            
+            // Если мы были на экране выбора валюты - закрываем его
+            if(document.getElementById('screen-currency-select').classList.contains('active')) {
+                closeCurrencySelect();
+            } else {
+                closeLocationScreen(); // Если были в настройках
+            }
+        }
+
         function closeCurrencySelect() {
             document.getElementById('screen-currency-select').classList.remove('active');
+            // Если модалка обмена открыта, кнопку "Назад" убирать нельзя (или надо перехватывать)
+            // Но для простоты скроем кнопку, так как модалка закрывается крестиком
             tg.BackButton.hide();
         }
 
-        // --- КАЛЬКУЛЯТОР ---
-        function calculate() {
-            const val = parseFloat(document.getElementById('input-top').value);
-            const out = document.getElementById('input-bottom');
-            
-            if (!val) { out.value = ''; return; }
-
-            const rate = currentLocation.rate;
-            let result = 0;
-
-            const getPrice = (code, type) => cryptoPricesUSD[code][type];
-
-            // 1. Fiat -> Crypto
-            if (topCurrency.type === 'fiat' && bottomCurrency.type === 'crypto') {
-                const price = getPrice(bottomCurrency.code, 'buy') * rate;
-                result = val / price;
-                out.value = result.toFixed(6);
-            }
-            // 2. Crypto -> Fiat
-            else if (topCurrency.type === 'crypto' && bottomCurrency.type === 'fiat') {
-                const price = getPrice(topCurrency.code, 'sell') * rate;
-                result = val * price;
-                out.value = result.toFixed(2);
-            }
-            // 3. Crypto -> Crypto
-            else if (topCurrency.type === 'crypto' && bottomCurrency.type === 'crypto') {
-                const priceIn = getPrice(topCurrency.code, 'sell');
-                const priceOut = getPrice(bottomCurrency.code, 'buy');
-                result = (val * priceIn) / priceOut;
-                out.value = result.toFixed(6);
-            }
-            else {
-                out.value = val;
-            }
-        }
-
+        // --- ОТПРАВКА ---
         function sendOrder() {
             const valIn = document.getElementById('input-top').value;
             const valOut = document.getElementById('input-bottom').value;
             if(!valIn) return;
             
+            const crypto = cryptoData.find(c => c.id === selectedCryptoId);
+            
             const data = {
-                type: 'ORDER',
+                type: isBuying ? 'BUY' : 'SELL',
+                coin: crypto.name,
+                network: crypto.net,
                 amount_in: valIn,
-                currency_in: topCurrency.type === 'crypto' ? coinsMeta[topCurrency.code].net : topCurrency.code,
+                currency_in: isBuying ? currentLocation.currency : crypto.ticker,
                 amount_out: valOut,
-                currency_out: bottomCurrency.type === 'crypto' ? coinsMeta[bottomCurrency.code].net : bottomCurrency.code,
+                currency_out: isBuying ? crypto.ticker : currentLocation.currency,
                 city: currentLocation.name
             };
             tg.sendData(JSON.stringify(data));
             tg.close();
         }
 
-        // --- ВСПОМОГАТЕЛЬНЫЕ ---
+        // --- UTILS & MENU ---
         function closeModal() {
             document.getElementById('modal').classList.remove('active');
             setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
         }
         function openSupport() { tg.openTelegramLink('https://t.me/' + SUPPORT_USERNAME); }
+        
         function openSettingsScreen() {
             document.getElementById('screen-home').classList.remove('active');
             document.getElementById('screen-settings').classList.add('active');
@@ -553,7 +585,9 @@
         }
         function openLocationScreenFromSettings() {
              document.getElementById('screen-settings').classList.remove('active');
-             openLocationScreen(true);
+             document.getElementById('screen-locations').classList.add('active');
+             tg.BackButton.show();
+             tg.BackButton.onClick(closeLocationScreen);
         }
         function renderLocationList() {
             const list = document.getElementById('city-list');
@@ -561,43 +595,26 @@
             locations.forEach(loc => {
                 const el = document.createElement('div');
                 el.className = 'selection-item';
-                el.onclick = () => selectLocation(loc);
+                el.onclick = () => { currentLocation = loc; updateDashboard(); closeLocationScreen(); };
                 el.innerHTML = `
-                    <div class="sel-left">
-                         <div style="font-weight:600;">${loc.name}</div>
-                    </div>
+                    <div class="sel-left"><span class="sel-name">${loc.name}</span></div>
                     ${currentLocation.id === loc.id ? '<div class="check-circle"><i class="fa-solid fa-check"></i></div>' : ''}
                 `;
                 list.appendChild(el);
             });
         }
-        let isFromSettings = false;
-        function openLocationScreen(fromSettings = false) {
-            isFromSettings = fromSettings;
+        function openLocationScreen() {
             renderLocationList();
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-home').classList.remove('active');
             document.getElementById('screen-locations').classList.add('active');
             tg.BackButton.show();
             tg.BackButton.onClick(closeLocationScreen);
         }
         function closeLocationScreen() {
             document.getElementById('screen-locations').classList.remove('active');
-            if(isFromSettings) {
-                document.getElementById('screen-settings').classList.add('active');
-                tg.BackButton.show();
-                tg.BackButton.onClick(closeSettingsScreen);
-            } else {
-                document.getElementById('screen-home').classList.add('active');
-                tg.BackButton.hide();
-            }
-        }
-        function selectLocation(loc) {
-            currentLocation = loc;
-            if(topCurrency.type === 'fiat') topCurrency.code = loc.currency;
-            if(bottomCurrency.type === 'fiat') bottomCurrency.code = loc.currency;
-            updateDashboard();
-            closeLocationScreen();
-            tg.HapticFeedback.selectionChanged();
+            // Если пришли из настроек, возвращаем в настройки (упрощенно - домой)
+            document.getElementById('screen-home').classList.add('active');
+            tg.BackButton.hide();
         }
 
         init();
