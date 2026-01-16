@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rexes</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #121820; /* Темный фон */
+            color: white;
+            font-family: sans-serif;
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; height: 90vh;
+        }
+        h1 { margin: 0 0 20px 0; font-size: 24px; }
+        
+        .card {
+            background: #1E252F;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        label { color: #8E97A3; font-size: 14px; display: block; margin-bottom: 5px; }
+        input {
+            background: transparent; border: none; outline: none;
+            color: white; font-size: 28px; font-weight: bold; width: 100%;
+        }
+        
+        .btn {
+            background: #3B82F6; /* Синяя кнопка */
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            margin-top: auto; /* Прижать к низу */
+        }
+        .btn:active { opacity: 0.8; transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+    <h1>Обмен USDT</h1>
+
+    <div class="card">
+        <label>Отдаете (RUB)</label>
+        <input type="number" id="rub" value="1000" oninput="calc()">
+    </div>
+
+    <div class="card">
+        <label>Получаете (USDT)</label>
+        <input type="text" id="usdt" readonly style="color: #3B82F6;">
+    </div>
+
+    <button class="btn" onclick="send()">ОБМЕНЯТЬ</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // На весь экран
+
+        const rate = 98.5; // Курс для примера
+
+        function calc() {
+            const rubVal = document.getElementById('rub').value;
+            document.getElementById('usdt').value = (rubVal / rate).toFixed(2);
+        }
+        
+        // Запускаем подсчет сразу при открытии
+        calc();
+
+        function send() {
+            const rubAmount = document.getElementById('rub').value;
+            const usdtAmount = document.getElementById('usdt').value;
+
+            if(rubAmount < 100) {
+                tg.showAlert("Минимум 100 рублей!");
+                return;
+            }
+
+            const data = {
+                type: "order",
+                rub: rubAmount,
+                usdt: usdtAmount
+            };
+
+            // Самый важный момент отправки
+            try {
+                tg.sendData(JSON.stringify(data));
+                // Если мы здесь, значит команда ушла
+            } catch (e) {
+                tg.showAlert("Ошибка отправки: " + e);
+            }
+        }
+    </script>
+</body>
+</html>
