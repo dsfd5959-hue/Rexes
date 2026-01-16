@@ -3,347 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rexes MiniApp</title>
+    <title>Rexes</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- НАСТРОЙКИ ДИЗАЙНА --- */
         :root {
-            --bg-color: #0d0d0d;
-            --card-bg: #1c1c1e;
-            --primary: #FF5500; /* Тот самый оранжевый */
-            --text-main: #ffffff;
-            --text-sec: #8e8e93;
-            --green: #4cd964;
-            --red: #ff3b30;
+            --bg: #0F0F10;
+            --card: #1C1C1E;
+            --input-bg: #2C2C2E;
+            --orange: #FF5500;
+            --text: #FFFFFF;
+            --gray: #8E8E93;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0; padding: 0;
-            padding-bottom: 80px; /* Место для нижнего меню */
-            overflow-x: hidden;
-        }
-
-        /* --- ЭКРАНЫ (Вкладки) --- */
-        .screen { display: none; padding: 16px; animation: fadeIn 0.3s; }
-        .screen.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- HEADER --- */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-top: 10px; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #333; object-fit: cover; }
-        .user-name { font-weight: 700; font-size: 16px; }
-        .user-tag { font-size: 12px; color: var(--text-sec); }
-        .settings-btn { background: var(--card-bg); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; }
-
-        /* --- КНОПКИ ГЛАВНОГО ЭКРАНА --- */
-        .location-btn {
-            background: var(--card-bg); width: 100%; padding: 16px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            margin-bottom: 12px; font-weight: 600; font-size: 15px; cursor: pointer;
-        }
-
-        /* --- СПИСОК ВАЛЮТ --- */
-        .market-header { display: flex; justify-content: space-between; color: var(--text-sec); font-size: 12px; margin-bottom: 10px; padding: 0 10px; }
         
-        .coin-item {
-            background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 8px;
-            display: flex; align-items: center; justify-content: space-between;
-            transition: transform 0.1s;
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; padding: 0; padding-bottom: 90px;
+            user-select: none;
         }
-        .coin-item:active { transform: scale(0.98); background: #2c2c2e; }
 
-        .coin-left { display: flex; align-items: center; gap: 12px; }
-        .coin-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; }
-        .bg-usdt { background: #26a17b; }
-        .bg-btc { background: #f7931a; }
-        .bg-eth { background: #627eea; }
+        /* --- ШАПКА --- */
+        .header { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .user-block { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; background: #333; }
+        .settings-btn { width: 36px; height: 36px; background: var(--card); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 
-        .coin-price { text-align: right; font-weight: 700; font-size: 15px; }
-        .coin-change { font-size: 11px; color: var(--text-sec); margin-top: 4px; }
+        /* --- КАРТОЧКИ --- */
+        .card-menu {
+            margin: 0 16px 10px 16px; background: var(--card); padding: 14px;
+            border-radius: 14px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px;
+        }
 
-        /* --- ШТОРКА ОБМЕНА (MODAL) --- */
-        .modal-overlay {
+        .section-title { margin: 20px 16px 10px; color: var(--gray); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .coin-list { padding: 0 16px; }
+        .coin-row {
+            background: var(--card); padding: 16px; border-radius: 16px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .coin-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; margin-right: 12px; }
+        
+        /* Цвета иконок */
+        .bg-usdt { background: #26A17B; }
+        .bg-btc { background: #F7931A; }
+        .bg-eth { background: #627EEA; }
+
+        /* --- МОДАЛЬНОЕ ОКНО ОБМЕНА --- */
+        .modal-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 100;
-            display: none; backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            display: none; z-index: 100;
         }
-        .modal-sheet {
+        .modal {
             position: fixed; bottom: -100%; left: 0; width: 100%;
-            background: #141414; border-radius: 24px 24px 0 0;
-            padding: 24px; z-index: 101; transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background: #141414; border-radius: 24px 24px 0 0; padding: 20px;
+            transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 101;
             border-top: 1px solid #333;
         }
-        .modal-sheet.active { bottom: 0; }
+        .modal.active { bottom: 0; }
 
-        .exchange-card {
-            background: #1E1E1E; border-radius: 16px; padding: 16px; margin-bottom: 12px;
-            border: 1px solid #333; position: relative;
+        .swap-container { position: relative; margin-top: 10px; }
+        
+        .input-card {
+            background: var(--input-bg); border-radius: 16px; padding: 16px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .exchange-label { color: var(--text-sec); font-size: 12px; margin-bottom: 8px; }
-        .exchange-row { display: flex; justify-content: space-between; align-items: center; }
-        .exchange-input {
-            background: transparent; border: none; color: white; font-size: 24px; font-weight: 700; width: 60%; outline: none;
+        .input-label { font-size: 12px; color: var(--gray); margin-bottom: 4px; }
+        .input-field {
+            background: transparent; border: none; color: white;
+            font-size: 24px; font-weight: 700; width: 100%; outline: none; padding: 0;
         }
-        .currency-badge {
-            background: #2C2C2E; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+        
+        /* Кнопка смены направления (стрелочки) */
+        .swap-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px; background: var(--bg); border: 2px solid var(--card);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: var(--orange); font-size: 16px; cursor: pointer; z-index: 5;
         }
 
-        .main-btn {
-            background: var(--primary); color: white; width: 100%; padding: 18px;
-            border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
-            margin-top: 20px; cursor: pointer;
+        .action-btn {
+            background: var(--orange); color: white; border: none; width: 100%; padding: 18px;
+            border-radius: 14px; font-size: 16px; font-weight: 700; margin-top: 20px;
         }
-        .main-btn:active { opacity: 0.8; }
 
-        /* --- НИЖНЕЕ МЕНЮ (TAB BAR) --- */
-        .bottom-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(20, 20, 20, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid #333;
-            display: flex; justify-content: space-around; padding: 12px 0;
-            z-index: 90; padding-bottom: 20px; /* Для айфонов */
+        /* --- НИЖНЕЕ МЕНЮ --- */
+        .tab-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(20,20,20,0.95);
+            border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 12px 0 24px;
         }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            color: var(--text-sec); font-size: 10px; cursor: pointer;
-        }
-        .nav-item.active { color: var(--primary); }
-        .nav-item i { font-size: 20px; margin-bottom: 2px; }
-
-        /* Профиль и Заявки */
-        .menu-list { margin-top: 20px; }
-        .menu-item {
-            background: var(--card-bg); padding: 16px; border-radius: 14px; margin-bottom: 8px;
-            display: flex; align-items: center; justify-content: space-between; font-weight: 500;
-        }
+        .tab-item { text-align: center; color: var(--gray); font-size: 10px; }
+        .tab-item.active { color: var(--orange); }
+        .tab-icon { font-size: 20px; margin-bottom: 4px; display: block; }
+        
+        /* Экраны */
+        .screen { display: none; }
+        .screen.active { display: block; }
     </style>
 </head>
 <body>
 
-    <div id="tab-home" class="screen active">
+    <div id="screen-home" class="screen active">
         <div class="header">
-            <div class="user-info">
-                <img src="https://ui-avatars.com/api/?name=User&background=333&color=fff" class="avatar" id="user-avatar">
+            <div class="user-block">
+                <div class="avatar"></div>
                 <div>
-                    <div class="user-name" id="user-name">Загрузка...</div>
-                    <div class="user-tag" id="user-tag">@username</div>
+                    <div style="font-weight: 700;" id="username">Гость</div>
+                    <div style="font-size: 12px; color: #888;">Online</div>
                 </div>
             </div>
             <div class="settings-btn"><i class="fa-solid fa-gear"></i></div>
         </div>
 
-        <div class="location-btn">
-            <i class="fa-solid fa-location-dot"></i> Россия, г. Москва
+        <div class="card-menu">
+            <i class="fa-solid fa-location-dot" style="color: var(--orange);"></i>
+            <span>Россия, г. Москва</span>
         </div>
 
-        <div class="location-btn" style="background: #2C2C2E;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/f/f3/Flag_of_Russia.svg" width="20" style="border-radius: 4px;"> RUB
-        </div>
+        <div class="section-title">Популярные валюты</div>
 
-        <div class="market-header">
-            <span>Валюта</span>
-            <span>Цена</span>
-        </div>
-
-        <div class="coin-item" onclick="openExchange('USDT', 98.50)">
-            <div class="coin-left">
-                <div class="coin-icon bg-usdt"><i class="fa-solid fa-t"></i></div>
-                <div>
-                    <div style="font-weight: 700;">Tether</div>
-                    <div style="font-size: 12px; color: #8e8e93;">TRC20</div>
+        <div class="coin-list">
+            <div class="coin-row" onclick="openModal('USDT', 98.50)">
+                <div style="display: flex; align-items: center;">
+                    <div class="coin-icon bg-usdt">T</div>
+                    <div>
+                        <div style="font-weight: 700;">Tether</div>
+                        <div style="font-size: 12px; color: #888;">TRC20</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 700;">98.50 ₽</div>
                 </div>
             </div>
-            <div class="coin-price">
-                98.50 ₽<br>
-                <span class="coin-change">Спред: 1.2%</span>
-            </div>
-        </div>
 
-        <div class="coin-item" onclick="openExchange('BTC', 7604642)">
-            <div class="coin-left">
-                <div class="coin-icon bg-btc"><i class="fa-brands fa-bitcoin"></i></div>
-                <div>
-                    <div style="font-weight: 700;">Bitcoin</div>
-                    <div style="font-size: 12px; color: #8e8e93;">BTC</div>
+            <div class="coin-row" onclick="openModal('BTC', 7604642)">
+                <div style="display: flex; align-items: center;">
+                    <div class="coin-icon bg-btc"><i class="fa-brands fa-bitcoin"></i></div>
+                    <div>
+                        <div style="font-weight: 700;">Bitcoin</div>
+                        <div style="font-size: 12px; color: #888;">BTC</div>
+                    </div>
                 </div>
-            </div>
-            <div class="coin-price">
-                7.6 млн ₽<br>
-                <span class="coin-change">Спред: 0.5%</span>
-            </div>
-        </div>
-
-        <div class="coin-item" onclick="openExchange('ETH', 263595)">
-            <div class="coin-left">
-                <div class="coin-icon bg-eth"><i class="fa-brands fa-ethereum"></i></div>
-                <div>
-                    <div style="font-weight: 700;">Ethereum</div>
-                    <div style="font-size: 12px; color: #8e8e93;">ERC20</div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 700;">7.6 M ₽</div>
                 </div>
-            </div>
-            <div class="coin-price">
-                263,595 ₽<br>
-                <span class="coin-change">Спред: 0.8%</span>
             </div>
         </div>
     </div>
 
-    <div id="tab-orders" class="screen">
-        <h2>Мои заявки</h2>
-        <div style="text-align: center; color: var(--text-sec); margin-top: 50px;">
-            <i class="fa-solid fa-clipboard-list" style="font-size: 40px; margin-bottom: 10px;"></i>
-            <p>История пуста</p>
-        </div>
+    <div id="screen-profile" class="screen" style="padding: 20px; text-align: center;">
+        <h2>Профиль пользователя</h2>
+        <p style="color: #888;">Здесь будут настройки и история.</p>
     </div>
 
-    <div id="tab-profile" class="screen">
-        <h1 style="margin-bottom: 20px;">Профиль</h1>
-        
-        <div class="menu-list">
-            <div class="menu-item">
-                <span><i class="fa-solid fa-location-arrow" style="width: 25px;"></i> Локация</span>
-                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
-            </div>
-            <div class="menu-item">
-                <span><i class="fa-solid fa-globe" style="width: 25px;"></i> Язык</span>
-                <span style="color: #666; font-size: 14px;">Русский <i class="fa-solid fa-chevron-right"></i></span>
-            </div>
-            <div class="menu-item">
-                <span><i class="fa-solid fa-headset" style="width: 25px;"></i> Поддержка</span>
-                <i class="fa-solid fa-chevron-right" style="color: #666;"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="bottom-bar">
-        <div class="nav-item active" onclick="switchTab('home', this)">
-            <i class="fa-solid fa-house"></i>
-            <span>Курсы</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('orders', this)">
-            <i class="fa-solid fa-bolt"></i>
-            <span>Заявки</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('profile', this)">
-            <i class="fa-solid fa-user"></i>
-            <span>Профиль</span>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="overlay" onclick="closeModal()"></div>
-    <div class="modal-sheet" id="modal">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin: 0; font-size: 20px;" id="modal-title">Обмен</h2>
-            <div onclick="closeModal()" style="background: #333; padding: 5px 10px; border-radius: 50%; cursor: pointer;">✕</div>
+    <div class="modal-bg" id="overlay" onclick="closeModal()"></div>
+    <div class="modal" id="modal">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h2 style="margin: 0; font-size: 20px;">Обмен</h2>
+            <div onclick="closeModal()" style="padding: 5px;">✕</div>
         </div>
 
-        <div class="exchange-card">
-            <div class="exchange-label">Отдаете</div>
-            <div class="exchange-row">
-                <input type="number" class="exchange-input" id="input-rub" value="100000" oninput="recalc()">
-                <div class="currency-badge">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/f/f3/Flag_of_Russia.svg" width="16"> RUB
+        <div class="swap-container">
+            <div class="input-card">
+                <div style="width: 100%;">
+                    <div class="input-label" id="label-top">Отдаете (RUB)</div>
+                    <input type="number" id="input-top" class="input-field" placeholder="0" oninput="calculate()">
                 </div>
+                <div style="font-weight: 600;" id="currency-top">RUB</div>
             </div>
-        </div>
 
-        <div class="exchange-card" style="background: #251e18; border-color: #553315;">
-            <div class="exchange-label" style="color: #dcb68b;">Получаете</div>
-            <div class="exchange-row">
-                <input type="text" class="exchange-input" id="input-coin" readonly style="color: #ff9f43;">
-                <div class="currency-badge" style="background: #463016; color: #ff9f43;">
-                    <i class="fa-solid fa-coins" style="margin-right: 5px;"></i> <span id="coin-ticker">BTC</span>
+            <div class="swap-btn" onclick="swapDirection()">
+                <i class="fa-solid fa-arrow-right-arrow-left" style="transform: rotate(90deg);"></i>
+            </div>
+
+            <div class="input-card" style="background: #222;">
+                <div style="width: 100%;">
+                    <div class="input-label" id="label-bottom">Получаете</div>
+                    <input type="text" id="input-bottom" class="input-field" placeholder="0" readonly style="color: var(--orange);">
                 </div>
+                <div style="font-weight: 600; color: var(--orange);" id="currency-bottom">USDT</div>
             </div>
         </div>
 
-        <button class="main-btn" onclick="sendData()">Далее</button>
+        <button class="action-btn" onclick="sendOrder()">Обменять</button>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('home')">
+            <i class="fa-solid fa-house tab-icon"></i> Курсы
+        </div>
+        <div class="tab-item" onclick="switchTab('orders')">
+            <i class="fa-solid fa-clock-rotate-left tab-icon"></i> История
+        </div>
+        <div class="tab-item" onclick="switchTab('profile')">
+            <i class="fa-solid fa-user tab-icon"></i> Профиль
+        </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.enableClosingConfirmation();
 
-        // Данные пользователя
-        const user = tg.initDataUnsafe.user;
-        if(user) {
-            document.getElementById('user-name').innerText = user.first_name + (user.last_name ? ' ' + user.last_name : '');
-            document.getElementById('user-tag').innerText = '@' + (user.username || 'anon');
-        } else {
-            document.getElementById('user-name').innerText = "Гость";
-        }
-
-        // --- ЛОГИКА ВКЛАДОК ---
-        function switchTab(tabId, element) {
-            // Скрываем все экраны
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            // Убираем подсветку кнопок
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            
-            // Показываем нужный
-            document.getElementById('tab-' + tabId).classList.add('active');
-            element.classList.add('active');
-            
-            tg.HapticFeedback.selectionChanged();
+        // Данные юзера
+        if (tg.initDataUnsafe.user) {
+            document.getElementById('username').innerText = tg.initDataUnsafe.user.first_name;
         }
 
         // --- ЛОГИКА ОБМЕНА ---
-        let currentRate = 0;
-        let currentSymbol = '';
+        let currentCoin = 'USDT';
+        let currentPrice = 0;
+        let isBuying = true; // true = покупаем крипту за рубли, false = продаем крипту за рубли
 
-        function openExchange(symbol, rate) {
-            currentRate = rate;
-            currentSymbol = symbol;
-            
-            document.getElementById('modal-title').innerText = `Обмен ${symbol}`;
-            document.getElementById('coin-ticker').innerText = symbol;
+        function openModal(coin, price) {
+            currentCoin = coin;
+            currentPrice = price;
+            isBuying = true; // Сброс на покупку при открытии
+            updateUI();
             
             document.getElementById('overlay').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('modal').classList.add('active');
-            }, 10);
-            
-            recalc();
+            setTimeout(() => document.getElementById('modal').classList.add('active'), 10);
             tg.HapticFeedback.impactOccurred('medium');
         }
 
         function closeModal() {
             document.getElementById('modal').classList.remove('active');
-            setTimeout(() => {
-                document.getElementById('overlay').style.display = 'none';
-            }, 300);
+            setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
+            document.getElementById('input-top').value = '';
+            document.getElementById('input-bottom').value = '';
         }
 
-        function recalc() {
-            const rub = parseFloat(document.getElementById('input-rub').value);
-            if(!rub) { document.getElementById('input-coin').value = '0'; return; }
+        // Главная функция переворота (SWAP)
+        function swapDirection() {
+            isBuying = !isBuying; // Меняем состояние на противоположное
             
-            let res = rub / currentRate;
-            // Красивое округление
-            document.getElementById('input-coin').value = res.toFixed(currentSymbol === 'BTC' ? 6 : 2);
+            // Меняем значения местами для красоты
+            const valTop = document.getElementById('input-top').value;
+            const valBot = document.getElementById('input-bottom').value;
+            
+            // Очищаем поля, чтобы не путать
+            document.getElementById('input-top').value = ''; 
+            document.getElementById('input-bottom').value = '';
+
+            updateUI();
+            tg.HapticFeedback.selectionChanged();
         }
 
-        function sendData() {
-            const rub = document.getElementById('input-rub').value;
-            const coin = document.getElementById('input-coin').value;
+        function updateUI() {
+            if (isBuying) {
+                // Режим: Отдаю РУБЛИ -> Получаю КРИПТУ
+                document.getElementById('label-top').innerText = 'Отдаете (RUB)';
+                document.getElementById('currency-top').innerText = 'RUB';
+                
+                document.getElementById('label-bottom').innerText = `Получаете (${currentCoin})`;
+                document.getElementById('currency-bottom').innerText = currentCoin;
+            } else {
+                // Режим: Отдаю КРИПТУ -> Получаю РУБЛИ
+                document.getElementById('label-top').innerText = `Отдаете (${currentCoin})`;
+                document.getElementById('currency-top').innerText = currentCoin;
+                
+                document.getElementById('label-bottom').innerText = 'Получаете (RUB)';
+                document.getElementById('currency-bottom').innerText = 'RUB';
+            }
+        }
+
+        function calculate() {
+            const input = parseFloat(document.getElementById('input-top').value);
+            const outputField = document.getElementById('input-bottom');
             
+            if (!input) {
+                outputField.value = '';
+                return;
+            }
+
+            let result;
+            if (isBuying) {
+                // Рубли делим на курс
+                result = input / currentPrice;
+                // Биткоину нужно больше знаков после запятой
+                outputField.value = result.toFixed(currentCoin === 'BTC' ? 6 : 2);
+            } else {
+                // Крипту умножаем на курс
+                result = input * currentPrice;
+                outputField.value = result.toFixed(2);
+            }
+        }
+
+        function sendOrder() {
+            const amountIn = document.getElementById('input-top').value;
+            const amountOut = document.getElementById('input-bottom').value;
+
+            if(!amountIn) return;
+
             const data = {
-                rub: rub,
-                usdt: coin, // тут имя переменной старое, но суть ясна
-                coin_name: currentSymbol
+                type: isBuying ? 'BUY' : 'SELL', // Говорим боту: Покупка или Продажа
+                coin: currentCoin,
+                amount_in: amountIn,
+                amount_out: amountOut,
+                currency_in: isBuying ? 'RUB' : currentCoin,
+                currency_out: isBuying ? currentCoin : 'RUB'
             };
-            
+
             tg.sendData(JSON.stringify(data));
             tg.close();
+        }
+
+        // Переключение вкладок меню
+        function switchTab(screenName) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+            
+            if(screenName === 'home') document.getElementById('screen-home').classList.add('active');
+            if(screenName === 'profile') document.getElementById('screen-profile').classList.add('active');
         }
     </script>
 </body>
