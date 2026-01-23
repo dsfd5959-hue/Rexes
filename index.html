@@ -3,122 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rexes Debug</title>
+    <title>Rexes Exchange</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Стили те же, сокращены для удобства, главное скрипт внизу */
-        :root { --bg: #0F0F10; --card: #1C1C1E; --input-bg: #2C2C2E; --orange: #FF5500; --text: #FFFFFF; --gray: #8E8E93; }
+        :root { --bg: #0F0F10; --card: #1C1C1E; --input-bg: #2C2C2E; --orange: #FF5500; --text: #FFFFFF; --gray: #8E8E93; --green: #26A17B; --red: #FF3B30; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 0 0 40px 0; }
-        .screen { display: none; padding-top: 10px; }
-        .screen.active { display: block; }
-        .btn-main { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: var(--orange); color: white; margin-top: 20px; }
-        .form-input { width: 100%; background: var(--card); border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; outline: none; margin-bottom: 10px; }
-        .header { padding: 16px; font-weight: bold; font-size: 18px; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0 0 40px 0; user-select: none; }
         
-        /* Простая верстка для теста */
-        .container { padding: 16px; }
-        .debug-info { color: yellow; font-size: 12px; margin-bottom: 10px; display: none; }
+        .screen { display: none; padding-top: 10px; animation: fadeIn 0.2s ease-out; }
+        .screen.active { display: block; }
+        
+        /* UI Elements */
+        .header { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .location-selector { margin: 0 16px 20px; background: var(--card); padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 14px; cursor: pointer; border: 1px solid #333; }
+        
+        .coin-list { padding: 0 16px 10px 16px; }
+        .coin-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr; align-items: center; padding: 12px 0; border-bottom: 1px solid #222; }
+        .coin-icon-small { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 10px; }
+        
+        /* Colors */
+        .bg-trc { background: var(--red); } .bg-erc { background: var(--green); } .bg-btc { background: #F7931A; } .bg-eth { background: #4F4F4F; }
+        
+        /* Buttons */
+        .bottom-actions { padding: 16px; margin-top: 10px; }
+        .btn-main { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-orange { background: var(--orange); color: white; margin-bottom: 12px; }
+        .btn-dark { background: var(--card); color: white; }
+        
+        /* Modal & Form */
+        .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; z-index: 100; backdrop-filter: blur(4px); }
+        .modal { position: fixed; bottom: -100%; left: 0; width: 100%; background: #141414; border-radius: 24px 24px 0 0; padding: 24px; transition: bottom 0.3s ease; z-index: 101; border-top: 1px solid #333; }
+        .modal.active { bottom: 0; }
+        
+        /* Inputs */
+        .input-card { background: var(--input-bg); border-radius: 16px; padding: 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; height: 80px; }
+        .input-field { background: transparent; border: none; color: white; font-size: 26px; font-weight: 700; width: 100%; outline: none; }
+        
+        /* Form Screen */
+        #screen-order-form { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 150; overflow-y: auto; }
+        .form-container { padding: 0 16px; }
+        .form-input { width: 100%; background: var(--card); border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; outline: none; margin-bottom: 16px; display: block; }
+        .form-label { color: var(--gray); font-size: 13px; margin-bottom: 8px; display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
     <div id="screen-home" class="screen active">
-        <div class="header">Rexes: Тест формы</div>
-        
-        <div class="container">
-            <p style="color: gray; font-size: 13px;">Заполните данные для проверки отправки:</p>
-
-            <label>Сумма (USDT):</label>
-            <input type="number" id="amount" class="form-input" value="100">
-
-            <label>ФИО:</label>
-            <input type="text" id="fio" class="form-input" placeholder="Иванов Иван">
-
-            <label>Контакт:</label>
-            <input type="text" id="contact" class="form-input" placeholder="@username">
-
-            <label>Метод:</label>
-            <input type="text" id="method" class="form-input" placeholder="Наличные">
-
-            <button class="btn-main" onclick="debugSubmit()">🚀 ОТПРАВИТЬ (ТЕСТ)</button>
-            
-            <br><br>
-            <button onclick="window.location.reload()" style="background: #333; color: white; border: none; padding: 10px; width: 100%; border-radius: 10px;">🔄 Перезагрузить страницу</button>
+        <div class="header">
+            <div style="font-weight: bold;">Rexes Exchange</div>
         </div>
+
+        <div class="location-selector">
+            <i class="fa-solid fa-location-dot"></i> <span id="current-city-text">Москва</span>
+        </div>
+
+        <div class="coin-list" id="coin-list">
+            </div>
+
+        <div class="bottom-actions">
+            <button class="btn-main btn-orange" onclick="openExchangeModal()">Обменять</button>
+            <button class="btn-main btn-dark" onclick="tg.openTelegramLink('https://t.me/rexes_support')">Поддержка</button>
+        </div>
+    </div>
+
+    <div id="screen-order-form" class="screen">
+        <div class="header">
+            <div style="font-size: 18px; font-weight: 700;">Оформление</div>
+            <div onclick="closeOrderForm()" style="padding: 10px;">✕</div>
+        </div>
+        <div class="form-container">
+            <div style="background: rgba(255,85,0,0.1); border: 1px solid var(--orange); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span style="color:#888">Отдаете:</span>
+                    <span style="font-weight:bold" id="sum-give">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#888">Получаете:</span>
+                    <span style="font-weight:bold" id="sum-get">0</span>
+                </div>
+            </div>
+
+            <label class="form-label">ФИО</label>
+            <input type="text" class="form-input" id="field-fio" placeholder="Иванов Иван">
+
+            <label class="form-label">Telegram / Телефон</label>
+            <input type="text" class="form-input" id="field-contact" placeholder="@username">
+
+            <label class="form-label">Способ получения</label>
+            <input type="text" class="form-input" id="field-method" placeholder="Наличные / Карта">
+
+            <button class="btn-main btn-orange" onclick="submitFinalOrder()">Подтвердить заявку</button>
+        </div>
+    </div>
+
+    <div class="modal-bg" id="overlay" onclick="closeModal()"></div>
+    <div class="modal" id="modal">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h2>Обмен</h2>
+            <div onclick="closeModal()">✕</div>
+        </div>
+        
+        <div class="input-card">
+            <div>
+                <div style="font-size:12px; color:#888;">Отдаете (USDT)</div>
+                <input type="number" id="input-top" class="input-field" placeholder="0" oninput="calculate()">
+            </div>
+            <div style="font-weight:bold;">USDT</div>
+        </div>
+
+        <div class="input-card" style="background:#222;">
+            <div>
+                <div style="font-size:12px; color:#888;">Получаете (RUB)</div>
+                <input type="text" id="input-bottom" class="input-field" readonly style="color:var(--orange);">
+            </div>
+            <div style="font-weight:bold;">RUB</div>
+        </div>
+
+        <button class="btn-main btn-orange" style="margin-top:20px;" onclick="openOrderForm()">Далее</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Инициализация
-        try {
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                document.getElementById('contact').value = '@' + tg.initDataUnsafe.user.username;
-            }
-        } catch (e) {
-            console.log(e);
+        // INIT DATA
+        const rate = 98.5; // Курс (можно менять)
+        
+        // Auto-fill username
+        if(tg.initDataUnsafe?.user?.username) {
+            document.getElementById('field-contact').value = '@' + tg.initDataUnsafe.user.username;
         }
 
-        function debugSubmit() {
-            // 1. Проверяем, работает ли кнопка
-            tg.showPopup({
-                title: 'Шаг 1',
-                message: 'Кнопка нажата. Сейчас начнем сбор данных.',
-                buttons: [{type: 'ok'}]
-            }, function() {
-                
-                // 2. Собираем данные внутри callback-а
-                try {
-                    const amount = document.getElementById('amount').value;
-                    const fio = document.getElementById('fio').value;
-                    const contact = document.getElementById('contact').value;
-                    const method = document.getElementById('method').value;
+        // --- LOGIC ---
+        function calculate() {
+            const val = document.getElementById('input-top').value;
+            document.getElementById('input-bottom').value = (val * rate).toFixed(2);
+        }
 
-                    if (!fio || !contact) {
-                        tg.showAlert("Ошибка: Заполните ФИО и Контакт!");
-                        return;
-                    }
+        function openExchangeModal() {
+            document.getElementById('overlay').style.display = 'block';
+            setTimeout(() => document.getElementById('modal').classList.add('active'), 10);
+        }
 
-                    // Формируем объект
-                    const data = {
-                        type: 'BUY',
-                        coin: 'USDT (Test)',
-                        amount_in: amount,
-                        currency_in: 'USDT',
-                        amount_out: (amount * 98).toFixed(2),
-                        currency_out: 'RUB',
-                        city: 'Тестовый Город',
-                        fio: fio,
-                        contact: contact,
-                        method: method
-                    };
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
+        }
 
-                    const dataString = JSON.stringify(data);
+        function openOrderForm() {
+            const val = document.getElementById('input-top').value;
+            if(!val) return tg.showAlert("Введите сумму!");
 
-                    // 3. Показываем данные перед отправкой
-                    tg.showPopup({
-                        title: 'Шаг 2: Данные готовы',
-                        message: 'Отправляем это боту:\n' + dataString,
-                        buttons: [{type: 'ok', text: 'Отправить'}]
-                    }, function(btnId) {
-                        
-                        // 4. ОТПРАВКА
-                        try {
-                            tg.sendData(dataString);
-                            // НЕ ЗАКРЫВАЕМ ПРИЛОЖЕНИЕ, ЧТОБЫ УВИДЕТЬ РЕЗУЛЬТАТ
-                            // tg.close(); 
-                        } catch (err) {
-                            tg.showAlert("КРИТИЧЕСКАЯ ОШИБКА sendData: " + err);
-                        }
-                    });
+            document.getElementById('sum-give').innerText = val + " USDT";
+            document.getElementById('sum-get').innerText = document.getElementById('input-bottom').value + " RUB";
+            
+            closeModal();
+            document.getElementById('screen-order-form').classList.add('active');
+            tg.BackButton.show();
+            tg.BackButton.onClick(closeOrderForm);
+        }
 
-                } catch (e) {
-                    tg.showAlert("ОШИБКА JS: " + e.message);
-                }
-            });
+        function closeOrderForm() {
+            document.getElementById('screen-order-form').classList.remove('active');
+            tg.BackButton.hide();
+            openExchangeModal();
+        }
+
+        function submitFinalOrder() {
+            const fio = document.getElementById('field-fio').value;
+            const contact = document.getElementById('field-contact').value;
+            const method = document.getElementById('field-method').value;
+
+            if(!fio || !contact) return tg.showAlert("Заполните все поля!");
+
+            const data = {
+                type: 'SELL', // Продаем USDT
+                coin: 'USDT',
+                amount_in: document.getElementById('input-top').value,
+                currency_in: 'USDT',
+                amount_out: document.getElementById('input-bottom').value,
+                currency_out: 'RUB',
+                city: 'Москва',
+                fio: fio,
+                contact: contact,
+                method: method
+            };
+
+            tg.sendData(JSON.stringify(data));
         }
     </script>
 </body>
