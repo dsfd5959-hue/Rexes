@@ -3,622 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rexes</title>
+    <title>Rexes Debug</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- 1. БАЗОВЫЕ НАСТРОЙКИ --- */
-        :root {
-            --bg: #0F0F10;
-            --card: #1C1C1E;
-            --input-bg: #2C2C2E;
-            --orange: #FF5500;
-            --text: #FFFFFF;
-            --gray: #8E8E93;
-            --green: #26A17B;
-            --red: #FF3B30;
-        }
-
+        /* Стили те же, сокращены для удобства, главное скрипт внизу */
+        :root { --bg: #0F0F10; --card: #1C1C1E; --input-bg: #2C2C2E; --orange: #FF5500; --text: #FFFFFF; --gray: #8E8E93; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            background: var(--bg); color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0; padding: 0; padding-bottom: 40px;
-            user-select: none;
-        }
-
-        /* --- 2. ЭКРАНЫ --- */
-        .screen { display: none; padding-top: 10px; animation: fadeIn 0.2s ease-out; z-index: 1; position: relative; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 0 0 40px 0; }
+        .screen { display: none; padding-top: 10px; }
         .screen.active { display: block; }
-
-        /* Модальное окно (Обмен) */
-        .modal-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
-            display: none; z-index: 100;
-        }
-        .modal {
-            position: fixed; bottom: -100%; left: 0; width: 100%;
-            background: #141414; border-radius: 24px 24px 0 0; padding: 24px;
-            transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 101;
-            border-top: 1px solid #333;
-        }
-        .modal.active { bottom: 0; }
-
-        /* Экран выбора валюты (ПОВЕРХ ВСЕГО) */
-        #screen-currency-select {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 200;
-            display: none; padding-top: 0;
-        }
-        #screen-currency-select.active { display: block; animation: slideIn 0.2s ease-out; }
-
-        /* Экран Формы заявки (Тоже полный экран) */
-        #screen-order-form {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 150; /* Поверх всего, кроме выбора валют */
-            display: none; padding-top: 0; overflow-y: auto;
-        }
-        #screen-order-form.active { display: block; animation: slideIn 0.2s ease-out; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-
-        /* --- 3. UI КОМПОНЕНТЫ --- */
-        .header { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
-        .user-block { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 36px; height: 36px; border-radius: 50%; background: #333; background-size: cover; }
-        .settings-btn { width: 36px; height: 36px; background: var(--card); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-
-        /* Таблица курсов */
-        .location-selector { margin: 0 16px 20px; background: var(--card); padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 14px; cursor: pointer; border: 1px solid #333; }
-        .market-header { display: grid; grid-template-columns: 1.5fr 1fr 1fr; padding: 0 16px; margin-bottom: 8px; color: var(--gray); font-size: 11px; font-weight: 500; text-transform: uppercase; }
-        .header-col-right { text-align: right; }
-        .coin-list { padding: 0 16px 10px 16px; }
-        .coin-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr; align-items: center; padding: 12px 0; border-bottom: 1px solid #222; }
-        .coin-row:last-child { border-bottom: none; }
-        .coin-info { display: flex; align-items: center; gap: 10px; }
-        .coin-icon-small { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: bold; flex-shrink: 0; }
-        .coin-text { display: flex; flex-direction: column; }
-        .coin-name { font-weight: 700; font-size: 13px; }
-        .coin-net { font-size: 10px; color: var(--gray); }
-        .price-col { text-align: right; font-weight: 600; font-size: 12px; }
-
-        .bg-trc { background: var(--red); }
-        .bg-erc { background: var(--green); }
-        .bg-btc { background: #F7931A; }
-        .bg-eth { background: #4F4F4F; }
-        .bg-ton { background: #0098EA; }
-
-        /* Кнопки */
-        .bottom-actions { padding: 16px; margin-top: 10px; }
-        .btn-main { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-orange { background: var(--orange); color: white; margin-bottom: 12px; }
-        .btn-dark { background: var(--card); color: white; }
-        .btn-main:active { transform: scale(0.98); opacity: 0.9; }
-
-        /* Списки выбора */
-        .selection-list { padding: 0 16px; }
-        .selection-item { background: var(--card); padding: 14px 16px; border-radius: 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .selection-item:active { background: #2c2c2e; }
-        .sel-left { display: flex; align-items: center; gap: 14px; }
-        .sel-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; font-weight: bold; }
-        .sel-text { display: flex; flex-direction: column; }
-        .sel-name { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
-        .sel-sub { font-size: 12px; color: var(--gray); text-transform: uppercase; }
-        .check-circle { width: 22px; height: 22px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-size: 12px; }
-
-        /* Окно обмена */
-        .swap-container { position: relative; margin-top: 20px; }
-        .input-card { background: var(--input-bg); border-radius: 16px; padding: 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; height: 80px; border: 1px solid transparent; position: relative; }
-        .input-card:focus-within { border-color: #444; }
-        .input-left { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
-        .input-label { font-size: 12px; color: var(--gray); margin-bottom: 6px; }
-        .input-field { background: transparent; border: none; color: white; font-size: 26px; font-weight: 700; width: 100%; outline: none; padding: 0; margin: 0; }
+        .btn-main { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: var(--orange); color: white; margin-top: 20px; }
+        .form-input { width: 100%; background: var(--card); border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; outline: none; margin-bottom: 10px; }
+        .header { padding: 16px; font-weight: bold; font-size: 18px; }
         
-        .currency-btn { background: #1C1C1E; padding: 8px 12px 8px 8px; border-radius: 24px; display: flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid #333; z-index: 10; position: relative; min-width: 90px; justify-content: space-between; }
-        .currency-btn:active { background: #333; }
-        .mini-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: bold; }
-        .ticker-text { font-weight: 600; font-size: 14px; }
-
-        .swap-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #1C1C1E; border: 4px solid #141414; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; cursor: pointer; z-index: 20; }
-        .action-btn { background: var(--orange); color: white; border: none; width: 100%; padding: 18px; border-radius: 14px; font-size: 16px; font-weight: 700; margin-top: 24px; cursor: pointer; }
-
-        /* Меню */
-        .settings-list { padding: 0 16px; }
-        .settings-item { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 14px; cursor: pointer; }
-
-        /* --- СТИЛИ ФОРМЫ ЗАЯВКИ (НОВОЕ) --- */
-        .form-container { padding: 0 16px; }
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; color: var(--gray); font-size: 13px; margin-bottom: 8px; margin-left: 4px; }
-        .form-input { 
-            width: 100%; background: var(--card); border: 1px solid #333; 
-            color: white; padding: 16px; border-radius: 12px; font-size: 16px; outline: none; 
-        }
-        .form-input:focus { border-color: var(--orange); }
-        
-        .order-summary {
-            background: rgba(255, 85, 0, 0.1); border: 1px solid var(--orange);
-            border-radius: 12px; padding: 16px; margin-bottom: 24px;
-        }
-        .summary-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; }
-        .summary-val { font-weight: 700; color: white; }
-        .summary-lbl { color: var(--gray); }
-
+        /* Простая верстка для теста */
+        .container { padding: 16px; }
+        .debug-info { color: yellow; font-size: 12px; margin-bottom: 10px; display: none; }
     </style>
 </head>
 <body>
 
     <div id="screen-home" class="screen active">
-        <div class="header">
-            <div class="user-block">
-                <div class="avatar" id="user-avatar"></div>
-                <div>
-                    <div style="font-weight: 700; font-size: 14px;" id="username">Гость</div>
-                    <div style="font-size: 12px; color: var(--gray);" id="user-tag">...</div>
-                </div>
-            </div>
-            <div class="settings-btn" onclick="openSettingsScreen()"><i class="fa-solid fa-gear"></i></div>
-        </div>
-
-        <div class="location-selector" onclick="openLocationScreen()">
-            <i class="fa-solid fa-location-dot" style="color: white;"></i>
-            <span id="current-city-text">Россия, г. Москва</span>
-        </div>
-
-        <div class="market-header">
-            <div>Валюта</div>
-            <div class="header-col-right">Купить</div>
-            <div class="header-col-right">Продать</div>
-        </div>
-
-        <div class="coin-list" id="coin-list"></div>
-
-        <div class="bottom-actions">
-            <button class="btn-main btn-orange" onclick="openExchangeModal()">
-                <i class="fa-solid fa-arrow-right-arrow-left" style="transform: rotate(90deg);"></i> Обменять
-            </button>
-            <button class="btn-main btn-dark" onclick="openSupport()">
-                <i class="fa-regular fa-comment-dots"></i> Поддержка
-            </button>
-        </div>
-    </div>
-
-    <div id="screen-locations" class="screen">
-        <div class="header">
-            <div style="font-size: 18px; font-weight: 700;">Локация</div>
-            <div class="settings-btn" onclick="closeLocationScreen()">✕</div>
-        </div>
-        <div class="selection-list" id="city-list"></div>
-    </div>
-
-    <div id="screen-settings" class="screen">
-        <div class="header">
-            <div style="font-size: 18px; font-weight: 700;">Меню</div>
-            <div class="settings-btn" onclick="closeSettingsScreen()">✕</div>
-        </div>
-        <div class="settings-list">
-            <div class="settings-item" onclick="openLocationScreenFromSettings()">
-                <div><i class="fa-solid fa-location-dot" style="width:24px;"></i> Локация по умолчанию</div>
-                <i class="fa-solid fa-chevron-right" style="color:#666;"></i>
-            </div>
-            <div class="settings-item">
-                <div><i class="fa-solid fa-book" style="width:24px;"></i> Заявки</div>
-                <i class="fa-solid fa-chevron-right" style="color:#666;"></i>
-            </div>
-            <div class="settings-item" onclick="openSupport()">
-                <div><i class="fa-regular fa-comment-dots" style="width:24px;"></i> Поддержка</div>
-                <i class="fa-solid fa-chevron-right" style="color:#666;"></i>
-            </div>
-        </div>
-    </div>
-
-    <div id="screen-currency-select">
-        <div class="header">
-            <div style="font-size: 18px; font-weight: 700;" id="select-title">Выберите валюту</div>
-            <div class="settings-btn" onclick="closeCurrencySelect()">✕</div>
-        </div>
-        <div style="padding: 0 16px 16px; color: #8E8E93; font-size: 13px;" id="select-subtitle">
-            Выберите валюту из списка
-        </div>
-        <div class="selection-list" id="select-list"></div>
-    </div>
-
-    <div id="screen-order-form">
-        <div class="header">
-            <div style="font-size: 18px; font-weight: 700;">Оформление</div>
-            <div class="settings-btn" onclick="closeOrderForm()">✕</div>
-        </div>
+        <div class="header">Rexes: Тест формы</div>
         
-        <div class="form-container">
-            <div class="order-summary">
-                <div class="summary-row">
-                    <span class="summary-lbl">Отдаете:</span>
-                    <span class="summary-val" id="sum-give">...</span>
-                </div>
-                <div class="summary-row">
-                    <span class="summary-lbl">Получаете:</span>
-                    <span class="summary-val" id="sum-get">...</span>
-                </div>
-                <div class="summary-row" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
-                    <span class="summary-lbl">Город:</span>
-                    <span class="summary-val" id="sum-city">...</span>
-                </div>
-            </div>
+        <div class="container">
+            <p style="color: gray; font-size: 13px;">Заполните данные для проверки отправки:</p>
 
-            <div class="form-group">
-                <label class="form-label">ФИО</label>
-                <input type="text" class="form-input" id="field-fio" placeholder="Иванов Иван Иванович">
-            </div>
+            <label>Сумма (USDT):</label>
+            <input type="number" id="amount" class="form-input" value="100">
 
-            <div class="form-group">
-                <label class="form-label">Способ связи (Telegram / Телефон)</label>
-                <input type="text" class="form-input" id="field-contact" placeholder="@username или +7...">
-            </div>
+            <label>ФИО:</label>
+            <input type="text" id="fio" class="form-input" placeholder="Иванов Иван">
 
-            <div class="form-group">
-                <label class="form-label">Способ получения</label>
-                <input type="text" class="form-input" id="field-method" placeholder="Например: Наличные, QR, Карта">
-            </div>
+            <label>Контакт:</label>
+            <input type="text" id="contact" class="form-input" placeholder="@username">
 
-            <button class="action-btn" onclick="submitFinalOrder()">Подтвердить заявку</button>
+            <label>Метод:</label>
+            <input type="text" id="method" class="form-input" placeholder="Наличные">
+
+            <button class="btn-main" onclick="debugSubmit()">🚀 ОТПРАВИТЬ (ТЕСТ)</button>
+            
+            <br><br>
+            <button onclick="window.location.reload()" style="background: #333; color: white; border: none; padding: 10px; width: 100%; border-radius: 10px;">🔄 Перезагрузить страницу</button>
         </div>
-    </div>
-
-    <div class="modal-bg" id="overlay" onclick="closeModal()"></div>
-    <div class="modal" id="modal">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 24px;">
-            <h2 style="margin: 0; font-size: 20px;">Обмен</h2>
-            <div onclick="closeModal()" style="padding: 5px; cursor: pointer;">✕</div>
-        </div>
-
-        <div class="swap-container">
-            <div class="input-card">
-                <div class="input-left">
-                    <div class="input-label" id="label-top">Отдаете</div>
-                    <input type="number" id="input-top" class="input-field" placeholder="0" oninput="calculate()">
-                </div>
-                <div class="currency-btn" onclick="openSelect('top')">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div class="mini-icon" id="icon-top"></div>
-                        <span class="ticker-text" id="ticker-top">USDT</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="font-size: 10px; color: #666;"></i>
-                </div>
-            </div>
-
-            <div class="swap-circle" onclick="swap()">
-                <i class="fa-solid fa-arrow-down"></i>
-            </div>
-
-            <div class="input-card" style="background: #222;">
-                <div class="input-left">
-                    <div class="input-label" id="label-bottom">Получаете</div>
-                    <input type="text" id="input-bottom" class="input-field" placeholder="0" readonly style="color: var(--orange);">
-                </div>
-                <div class="currency-btn" onclick="openSelect('bottom')">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div class="mini-icon" id="icon-bottom"></div>
-                        <span class="ticker-text" id="ticker-bottom">RUB</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="font-size: 10px; color: #666;"></i>
-                </div>
-            </div>
-        </div>
-
-        <button class="action-btn" onclick="openOrderForm()">📝 Оставить заявку</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- ВАЖНАЯ НАСТРОЙКА ---
-        const SUPPORT_USERNAME = 'rexes_support'; 
+        // Инициализация
+        try {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                document.getElementById('contact').value = '@' + tg.initDataUnsafe.user.username;
+            }
+        } catch (e) {
+            console.log(e);
+        }
 
-        const locations = [
-            { id: 'msk', name: 'Россия, г. Москва', currency: 'RUB', symbol: '₽', rate: 98.5 },
-            { id: 'dxb', name: 'ОАЭ, г. Дубай', currency: 'AED', symbol: 'dh', rate: 3.67 },
-            { id: 'ist', name: 'Турция, г. Стамбул', currency: 'TRY', symbol: '₺', rate: 34.0 },
-            { id: 'tbs', name: 'Грузия, г. Тбилиси', currency: 'GEL', symbol: '₾', rate: 2.7 },
-            { id: 'evn', name: 'Армения, г. Ереван', currency: 'AMD', symbol: '֏', rate: 387 }
-        ];
-
-        const cryptoData = [
-            { id: 'USDT_TRC20', name: 'Tether', net: 'USDT TRC20', ticker: 'USDT', color: 'bg-trc', icon: 'T', priceBuy: 1.002, priceSell: 0.998 },
-            { id: 'BTC', name: 'Bitcoin', net: 'BTC', ticker: 'BTC', color: 'bg-btc', icon: '<i class="fa-brands fa-bitcoin"></i>', priceBuy: 76500, priceSell: 75200 },
-            { id: 'ETH', name: 'Ethereum', net: 'ETH', ticker: 'ETH', color: 'bg-eth', icon: '<i class="fa-brands fa-ethereum"></i>', priceBuy: 2950, priceSell: 2890 },
-            { id: 'USDT_ERC20', name: 'Tether', net: 'USDT ERC20', ticker: 'USDT', color: 'bg-erc', icon: 'T', priceBuy: 1.005, priceSell: 0.995 }
-        ];
-
-        let currentLocation = locations[0]; 
-        let isBuying = false; 
-        let selectedCryptoId = 'USDT_TRC20';
-
-        function init() {
-            if (tg.initDataUnsafe.user) {
-                const user = tg.initDataUnsafe.user;
-                document.getElementById('username').innerText = user.first_name;
-                document.getElementById('user-tag').innerText = user.username ? '@' + user.username : '';
-                if(user.photo_url) document.getElementById('user-avatar').style.backgroundImage = `url('${user.photo_url}')`;
+        function debugSubmit() {
+            // 1. Проверяем, работает ли кнопка
+            tg.showPopup({
+                title: 'Шаг 1',
+                message: 'Кнопка нажата. Сейчас начнем сбор данных.',
+                buttons: [{type: 'ok'}]
+            }, function() {
                 
-                // Автозаполнение телеграма в форме
-                if(user.username) document.getElementById('field-contact').value = '@' + user.username;
-            }
-            renderLocationList();
-            updateDashboard();
-        }
+                // 2. Собираем данные внутри callback-а
+                try {
+                    const amount = document.getElementById('amount').value;
+                    const fio = document.getElementById('fio').value;
+                    const contact = document.getElementById('contact').value;
+                    const method = document.getElementById('method').value;
 
-        // --- DASHBOARD ---
-        function updateDashboard() {
-            document.getElementById('current-city-text').innerText = currentLocation.name;
-            const list = document.getElementById('coin-list');
-            list.innerHTML = '';
+                    if (!fio || !contact) {
+                        tg.showAlert("Ошибка: Заполните ФИО и Контакт!");
+                        return;
+                    }
 
-            cryptoData.forEach(coin => {
-                const buyPrice = (coin.priceBuy * currentLocation.rate).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
-                const sellPrice = (coin.priceSell * currentLocation.rate).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+                    // Формируем объект
+                    const data = {
+                        type: 'BUY',
+                        coin: 'USDT (Test)',
+                        amount_in: amount,
+                        currency_in: 'USDT',
+                        amount_out: (amount * 98).toFixed(2),
+                        currency_out: 'RUB',
+                        city: 'Тестовый Город',
+                        fio: fio,
+                        contact: contact,
+                        method: method
+                    };
 
-                const item = document.createElement('div');
-                item.className = 'coin-row';
-                item.innerHTML = `
-                    <div class="coin-info">
-                        <div class="coin-icon-small ${coin.color}">${coin.icon}</div>
-                        <div class="coin-text"><span class="coin-name">${coin.name}</span><span class="coin-net">${coin.net}</span></div>
-                    </div>
-                    <div class="price-col">${buyPrice} ${currentLocation.symbol}</div>
-                    <div class="price-col" style="color:#8E8E93;">${sellPrice} ${currentLocation.symbol}</div>
-                `;
-                list.appendChild(item);
+                    const dataString = JSON.stringify(data);
+
+                    // 3. Показываем данные перед отправкой
+                    tg.showPopup({
+                        title: 'Шаг 2: Данные готовы',
+                        message: 'Отправляем это боту:\n' + dataString,
+                        buttons: [{type: 'ok', text: 'Отправить'}]
+                    }, function(btnId) {
+                        
+                        // 4. ОТПРАВКА
+                        try {
+                            tg.sendData(dataString);
+                            // НЕ ЗАКРЫВАЕМ ПРИЛОЖЕНИЕ, ЧТОБЫ УВИДЕТЬ РЕЗУЛЬТАТ
+                            // tg.close(); 
+                        } catch (err) {
+                            tg.showAlert("КРИТИЧЕСКАЯ ОШИБКА sendData: " + err);
+                        }
+                    });
+
+                } catch (e) {
+                    tg.showAlert("ОШИБКА JS: " + e.message);
+                }
             });
         }
-
-        // --- EXCHANGE MODAL ---
-        function openExchangeModal() {
-            document.getElementById('input-top').value = '';
-            document.getElementById('input-bottom').value = '';
-            updateExchangeUI();
-            
-            document.getElementById('overlay').style.display = 'block';
-            setTimeout(() => document.getElementById('modal').classList.add('active'), 10);
-            tg.HapticFeedback.impactOccurred('medium');
-        }
-
-        function updateExchangeUI() {
-            const crypto = cryptoData.find(c => c.id === selectedCryptoId);
-            const fiat = currentLocation;
-            
-            const topData = isBuying ? fiat : crypto;
-            const bottomData = isBuying ? crypto : fiat;
-
-            renderBtn('top', topData, isBuying); 
-            renderBtn('bottom', bottomData, !isBuying);
-            
-            document.getElementById('label-top').innerText = isBuying ? 'Отдаете (Наличные)' : 'Отдаете (Крипта)';
-            document.getElementById('label-bottom').innerText = isBuying ? 'Получаете (Крипта)' : 'Получаете (Наличные)';
-            calculate();
-        }
-
-        function renderBtn(pos, data, isFiat) {
-            const iconEl = document.getElementById(`icon-${pos}`);
-            const textEl = document.getElementById(`ticker-${pos}`);
-            if (isFiat) {
-                iconEl.className = 'mini-icon'; iconEl.style.background = '#333'; iconEl.innerHTML = data.symbol; textEl.innerText = data.currency;
-            } else {
-                iconEl.className = `mini-icon ${data.color}`; iconEl.innerHTML = data.icon; textEl.innerText = data.ticker;
-            }
-        }
-
-        function swap() {
-            isBuying = !isBuying;
-            document.getElementById('input-top').value = '';
-            document.getElementById('input-bottom').value = '';
-            updateExchangeUI();
-            tg.HapticFeedback.selectionChanged();
-        }
-
-        function calculate() {
-            const val = parseFloat(document.getElementById('input-top').value);
-            const out = document.getElementById('input-bottom');
-            if (!val) { out.value = ''; return; }
-
-            const crypto = cryptoData.find(c => c.id === selectedCryptoId);
-            const rate = currentLocation.rate;
-            let result = 0;
-
-            if (isBuying) {
-                const price = crypto.priceBuy * rate;
-                result = val / price;
-                out.value = result.toFixed(6);
-            } else {
-                const price = crypto.priceSell * rate;
-                result = val * price;
-                out.value = result.toFixed(2);
-            }
-        }
-
-        // --- ЛОГИКА ФОРМЫ (НОВОЕ) ---
-        function openOrderForm() {
-            const valIn = document.getElementById('input-top').value;
-            if(!valIn) {
-                tg.showAlert("Введите сумму обмена");
-                return;
-            }
-            
-            // Закрываем модалку
-            document.getElementById('modal').classList.remove('active');
-            setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
-
-            // Заполняем сводку
-            const valOut = document.getElementById('input-bottom').value;
-            const crypto = cryptoData.find(c => c.id === selectedCryptoId);
-            const fiatTicker = currentLocation.currency;
-            const cryptoTicker = crypto.ticker;
-
-            if(isBuying) {
-                document.getElementById('sum-give').innerText = `${valIn} ${fiatTicker}`;
-                document.getElementById('sum-get').innerText = `${valOut} ${cryptoTicker}`;
-            } else {
-                document.getElementById('sum-give').innerText = `${valIn} ${cryptoTicker}`;
-                document.getElementById('sum-get').innerText = `${valOut} ${fiatTicker}`;
-            }
-            document.getElementById('sum-city').innerText = currentLocation.name;
-
-            // Открываем форму
-            document.getElementById('screen-order-form').classList.add('active');
-            tg.BackButton.show();
-            tg.BackButton.onClick(closeOrderForm);
-        }
-
-        function closeOrderForm() {
-            document.getElementById('screen-order-form').classList.remove('active');
-            // Возвращаем модалку
-            openExchangeModal();
-            tg.BackButton.hide();
-        }
-
-        function submitFinalOrder() {
-            const fio = document.getElementById('field-fio').value;
-            const contact = document.getElementById('field-contact').value;
-            const method = document.getElementById('field-method').value;
-
-            if(!fio || !contact || !method) {
-                tg.showAlert("Пожалуйста, заполните все поля");
-                return;
-            }
-
-            // Данные калькулятора
-            const valIn = document.getElementById('input-top').value;
-            const valOut = document.getElementById('input-bottom').value;
-            const crypto = cryptoData.find(c => c.id === selectedCryptoId);
-
-            const data = {
-                type: isBuying ? 'BUY' : 'SELL',
-                coin: crypto.name,
-                network: crypto.net,
-                amount_in: valIn,
-                currency_in: isBuying ? currentLocation.currency : crypto.ticker,
-                amount_out: valOut,
-                currency_out: isBuying ? crypto.ticker : currentLocation.currency,
-                city: currentLocation.name,
-                // Новые поля
-                fio: fio,
-                contact: contact,
-                method: method
-            };
-
-            tg.sendData(JSON.stringify(data));
-            tg.close();
-        }
-
-        // --- ВЫБОР ВАЛЮТ ---
-        function openSelect(pos) {
-            let showCryptoList = false;
-            if (pos === 'top') showCryptoList = !isBuying;
-            else showCryptoList = isBuying;
-
-            renderSelectionList(showCryptoList);
-            document.getElementById('screen-currency-select').classList.add('active');
-            tg.BackButton.show();
-            tg.BackButton.onClick(closeCurrencySelect);
-        }
-
-        function closeCurrencySelect() {
-            document.getElementById('screen-currency-select').classList.remove('active');
-            tg.BackButton.hide();
-        }
-
-        function renderSelectionList(showCrypto) {
-            const list = document.getElementById('select-list');
-            list.innerHTML = '';
-            document.getElementById('select-title').innerText = showCrypto ? 'Выберите валюту' : 'Локация';
-            document.getElementById('select-subtitle').innerText = showCrypto ? 'Валюта' : 'Локация';
-
-            if (showCrypto) {
-                cryptoData.forEach(coin => {
-                    const el = document.createElement('div');
-                    el.className = 'selection-item';
-                    el.onclick = () => { selectedCryptoId = coin.id; updateExchangeUI(); closeCurrencySelect(); };
-                    const isSelected = selectedCryptoId === coin.id;
-                    el.innerHTML = `
-                        <div class="sel-left"><div class="sel-icon ${coin.color}">${coin.icon}</div>
-                        <div class="sel-text"><span class="sel-name">${coin.name}</span><span class="sel-sub">${coin.net}</span></div></div>
-                        ${isSelected ? '<div class="check-circle"><i class="fa-solid fa-check"></i></div>' : ''}
-                    `;
-                    list.appendChild(el);
-                });
-            } else {
-                locations.forEach(loc => {
-                    const el = document.createElement('div');
-                    el.className = 'selection-item';
-                    el.onclick = () => { selectLocation(loc); updateExchangeUI(); closeCurrencySelect(); };
-                    const isSelected = currentLocation.id === loc.id;
-                    el.innerHTML = `
-                        <div class="sel-left"><div class="sel-text"><span class="sel-name">${loc.name}</span></div></div>
-                        ${isSelected ? '<div class="check-circle"><i class="fa-solid fa-check"></i></div>' : ''}
-                    `;
-                    list.appendChild(el);
-                });
-            }
-        }
-
-        // --- UTILS ---
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-            setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
-        }
-        function openSupport() { tg.openTelegramLink('https://t.me/' + SUPPORT_USERNAME); }
-        function openSettingsScreen() {
-            document.getElementById('screen-home').classList.remove('active');
-            document.getElementById('screen-settings').classList.add('active');
-            tg.BackButton.show();
-            tg.BackButton.onClick(closeSettingsScreen);
-        }
-        function closeSettingsScreen() {
-            document.getElementById('screen-settings').classList.remove('active');
-            document.getElementById('screen-home').classList.add('active');
-            tg.BackButton.hide();
-        }
-        function openLocationScreenFromSettings() {
-             document.getElementById('screen-settings').classList.remove('active');
-             openLocationScreen();
-        }
-        function renderLocationList() {
-            const list = document.getElementById('city-list');
-            list.innerHTML = '';
-            locations.forEach(loc => {
-                const el = document.createElement('div');
-                el.className = 'selection-item';
-                el.onclick = () => { selectLocation(loc); closeLocationScreen(); };
-                el.innerHTML = `
-                    <div class="sel-left"><span class="sel-name">${loc.name}</span></div>
-                    ${currentLocation.id === loc.id ? '<div class="check-circle"><i class="fa-solid fa-check"></i></div>' : ''}
-                `;
-                list.appendChild(el);
-            });
-        }
-        function openLocationScreen() {
-            renderLocationList();
-            document.getElementById('screen-home').classList.remove('active');
-            document.getElementById('screen-locations').classList.add('active');
-            tg.BackButton.show();
-            tg.BackButton.onClick(closeLocationScreen);
-        }
-        function closeLocationScreen() {
-            document.getElementById('screen-locations').classList.remove('active');
-            document.getElementById('screen-home').classList.add('active');
-            tg.BackButton.hide();
-        }
-        function selectLocation(loc) {
-            currentLocation = loc;
-            if(topCurrency.type === 'fiat') topCurrency.code = loc.currency; // Исправление для обновления кода валюты
-            updateDashboard();
-            tg.HapticFeedback.selectionChanged();
-        }
-
-        init();
     </script>
 </body>
 </html>
