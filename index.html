@@ -1,199 +1,73 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rexes Exchange</title>
+    <!-- Telegram SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --bg: #0F0F10; --card: #1C1C1E; --input-bg: #2C2C2E; --orange: #FF5500; --text: #FFFFFF; --gray: #8E8E93; --green: #26A17B; --red: #FF3B30; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0 0 40px 0; user-select: none; }
-        
-        .screen { display: none; padding-top: 10px; animation: fadeIn 0.2s ease-out; }
-        .screen.active { display: block; }
-        
-        /* UI Elements */
-        .header { padding: 16px; display: flex; justify-content: space-between; align-items: center; }
-        .location-selector { margin: 0 16px 20px; background: var(--card); padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 14px; cursor: pointer; border: 1px solid #333; }
-        
-        .coin-list { padding: 0 16px 10px 16px; }
-        .coin-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr; align-items: center; padding: 12px 0; border-bottom: 1px solid #222; }
-        .coin-icon-small { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 10px; }
-        
-        /* Colors */
-        .bg-trc { background: var(--red); } .bg-erc { background: var(--green); } .bg-btc { background: #F7931A; } .bg-eth { background: #4F4F4F; }
-        
-        /* Buttons */
-        .bottom-actions { padding: 16px; margin-top: 10px; }
-        .btn-main { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-orange { background: var(--orange); color: white; margin-bottom: 12px; }
-        .btn-dark { background: var(--card); color: white; }
-        
-        /* Modal & Form */
-        .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; z-index: 100; backdrop-filter: blur(4px); }
-        .modal { position: fixed; bottom: -100%; left: 0; width: 100%; background: #141414; border-radius: 24px 24px 0 0; padding: 24px; transition: bottom 0.3s ease; z-index: 101; border-top: 1px solid #333; }
-        .modal.active { bottom: 0; }
-        
-        /* Inputs */
-        .input-card { background: var(--input-bg); border-radius: 16px; padding: 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; height: 80px; }
-        .input-field { background: transparent; border: none; color: white; font-size: 26px; font-weight: 700; width: 100%; outline: none; }
-        
-        /* Form Screen */
-        #screen-order-form { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 150; overflow-y: auto; }
-        .form-container { padding: 0 16px; }
-        .form-input { width: 100%; background: var(--card); border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; font-size: 16px; outline: none; margin-bottom: 16px; display: block; }
-        .form-label { color: var(--gray); font-size: 13px; margin-bottom: 8px; display: block; }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    </style>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
+    <div class="app-container fade-in">
 
-    <div id="screen-home" class="screen active">
-        <div class="header">
-            <div style="font-weight: bold;">Rexes Exchange</div>
-        </div>
+        <!-- Header -->
+        <header>
+            <h1 id="header-greeting">Привет! 👋</h1>
+            <p class="subtitle">Быстрый обмен криптовалют</p>
+        </header>
 
-        <div class="location-selector">
-            <i class="fa-solid fa-location-dot"></i> <span id="current-city-text">Москва</span>
-        </div>
-
-        <div class="coin-list" id="coin-list">
-            </div>
-
-        <div class="bottom-actions">
-            <button class="btn-main btn-orange" onclick="openExchangeModal()">Обменять</button>
-            <button class="btn-main btn-dark" onclick="tg.openTelegramLink('https://t.me/rexes_support')">Поддержка</button>
-        </div>
-    </div>
-
-    <div id="screen-order-form" class="screen">
-        <div class="header">
-            <div style="font-size: 18px; font-weight: 700;">Оформление</div>
-            <div onclick="closeOrderForm()" style="padding: 10px;">✕</div>
-        </div>
-        <div class="form-container">
-            <div style="background: rgba(255,85,0,0.1); border: 1px solid var(--orange); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span style="color:#888">Отдаете:</span>
-                    <span style="font-weight:bold" id="sum-give">0</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#888">Получаете:</span>
-                    <span style="font-weight:bold" id="sum-get">0</span>
-                </div>
-            </div>
-
-            <label class="form-label">ФИО</label>
-            <input type="text" class="form-input" id="field-fio" placeholder="Иванов Иван">
-
-            <label class="form-label">Telegram / Телефон</label>
-            <input type="text" class="form-input" id="field-contact" placeholder="@username">
-
-            <label class="form-label">Способ получения</label>
-            <input type="text" class="form-input" id="field-method" placeholder="Наличные / Карта">
-
-            <button class="btn-main btn-orange" onclick="submitFinalOrder()">Подтвердить заявку</button>
-        </div>
-    </div>
-
-    <div class="modal-bg" id="overlay" onclick="closeModal()"></div>
-    <div class="modal" id="modal">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+        <!-- Exchange Card -->
+        <section class="card">
             <h2>Обмен</h2>
-            <div onclick="closeModal()">✕</div>
-        </div>
-        
-        <div class="input-card">
-            <div>
-                <div style="font-size:12px; color:#888;">Отдаете (USDT)</div>
-                <input type="number" id="input-top" class="input-field" placeholder="0" oninput="calculate()">
-            </div>
-            <div style="font-weight:bold;">USDT</div>
-        </div>
 
-        <div class="input-card" style="background:#222;">
-            <div>
-                <div style="font-size:12px; color:#888;">Получаете (RUB)</div>
-                <input type="text" id="input-bottom" class="input-field" readonly style="color:var(--orange);">
+            <label class="label">Отдаете</label>
+            <div class="input-group">
+                <input type="number" id="amount-in" placeholder="0" oninput="calculateExchange('in')">
+                <span class="currency-badge">USDT</span>
             </div>
-            <div style="font-weight:bold;">RUB</div>
-        </div>
 
-        <button class="btn-main btn-orange" style="margin-top:20px;" onclick="openOrderForm()">Далее</button>
+            <label class="label">Получаете (примерно)</label>
+            <div class="input-group">
+                <input type="number" id="amount-out" placeholder="0" oninput="calculateExchange('out')">
+                <span class="currency-badge">RUB</span>
+            </div>
+
+            <p class="label" style="text-align: right; margin-top: 8px;">Курс: 1 USDT = 98.00 RUB</p>
+        </section>
+
+        <!-- Details Card -->
+        <section class="card">
+            <h2>Детали заявки</h2>
+
+            <label class="label">Город</label>
+            <select id="city" class="text-input">
+                <option value="Москва">Москва</option>
+                <option value="Санкт-Петербург">Санкт-Петербург</option>
+                <option value="Дубай">Дубай</option>
+                <option value="Стамбул">Стамбул</option>
+            </select>
+
+            <label class="label">ФИО получателя</label>
+            <input type="text" id="fio" class="text-input" placeholder="Иванов Иван Иванович">
+
+            <label class="label">Контакт для связи (Telegram)</label>
+            <input type="text" id="contact" class="text-input" placeholder="@username">
+        </section>
+
+        <!-- Action -->
+        <button class="btn-primary" onclick="submitOrder()">
+            ОФОРМИТЬ ОБМЕН
+        </button>
+
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        // INIT DATA
-        const rate = 98.5; // Курс (можно менять)
-        
-        // Auto-fill username
-        if(tg.initDataUnsafe?.user?.username) {
-            document.getElementById('field-contact').value = '@' + tg.initDataUnsafe.user.username;
-        }
-
-        // --- LOGIC ---
-        function calculate() {
-            const val = document.getElementById('input-top').value;
-            document.getElementById('input-bottom').value = (val * rate).toFixed(2);
-        }
-
-        function openExchangeModal() {
-            document.getElementById('overlay').style.display = 'block';
-            setTimeout(() => document.getElementById('modal').classList.add('active'), 10);
-        }
-
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-            setTimeout(() => document.getElementById('overlay').style.display = 'none', 300);
-        }
-
-        function openOrderForm() {
-            const val = document.getElementById('input-top').value;
-            if(!val) return tg.showAlert("Введите сумму!");
-
-            document.getElementById('sum-give').innerText = val + " USDT";
-            document.getElementById('sum-get').innerText = document.getElementById('input-bottom').value + " RUB";
-            
-            closeModal();
-            document.getElementById('screen-order-form').classList.add('active');
-            tg.BackButton.show();
-            tg.BackButton.onClick(closeOrderForm);
-        }
-
-        function closeOrderForm() {
-            document.getElementById('screen-order-form').classList.remove('active');
-            tg.BackButton.hide();
-            openExchangeModal();
-        }
-
-        function submitFinalOrder() {
-            const fio = document.getElementById('field-fio').value;
-            const contact = document.getElementById('field-contact').value;
-            const method = document.getElementById('field-method').value;
-
-            if(!fio || !contact) return tg.showAlert("Заполните все поля!");
-
-            const data = {
-                type: 'SELL', // Продаем USDT
-                coin: 'USDT',
-                amount_in: document.getElementById('input-top').value,
-                currency_in: 'USDT',
-                amount_out: document.getElementById('input-bottom').value,
-                currency_out: 'RUB',
-                city: 'Москва',
-                fio: fio,
-                contact: contact,
-                method: method
-            };
-
-            tg.sendData(JSON.stringify(data));
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
+
 </html>
