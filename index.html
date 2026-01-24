@@ -53,46 +53,62 @@
         <div class="rates-table">
             <div class="rates-header">
                 <span>Валюта</span>
-                <span>Цена (Binance)</span>
+                <span>Купить</span>
+                <span>Продать</span>
             </div>
 
-            <!-- USDT -->
+            <!-- USDT TRC20 -->
             <div class="rate-row">
-                <div class="rate-icon bg-tether">T</div>
-                <div class="rate-info">
-                    <span class="rate-name">Tether</span>
-                    <span class="rate-sub">USDT TRC20</span>
+                <div class="rate-col-currency">
+                    <div class="rate-icon bg-tether">T</div>
+                    <div class="rate-info">
+                        <span class="rate-name">Tether</span>
+                        <span class="rate-sub">USDT TRC20</span>
+                    </div>
                 </div>
-                <div class="rate-prices">
-                    <span class="price-buy" id="price-usdt">Loading...</span>
-                    <span class="price-sell">1 USDT</span>
-                </div>
+                <div class="rate-price" id="usdt-trc-buy">Loading...</div>
+                <div class="rate-price" id="usdt-trc-sell">Loading...</div>
             </div>
 
             <!-- BTC -->
             <div class="rate-row">
-                <div class="rate-icon bg-btc">₿</div>
-                <div class="rate-info">
-                    <span class="rate-name">Bitcoin</span>
-                    <span class="rate-sub">BTC</span>
+                <div class="rate-col-currency">
+                    <div class="rate-icon bg-btc">₿</div>
+                    <div class="rate-info">
+                        <span class="rate-name">Bitcoin</span>
+                        <span class="rate-sub">BTC</span>
+                    </div>
                 </div>
-                <div class="rate-prices">
-                    <span class="price-buy" id="price-btc">Loading...</span>
-                    <!-- <span class="price-sell">Продать</span> -->
-                </div>
+                <div class="rate-price" id="btc-buy">Loading...</div>
+                <div class="rate-price" id="btc-sell">Loading...</div>
             </div>
 
             <!-- ETH -->
-            <div class="rate-row" style="border-bottom: none;">
-                <div class="rate-icon bg-eth">Ξ</div>
-                <div class="rate-info">
-                    <span class="rate-name">Ethereum</span>
-                    <span class="rate-sub">ETH</span>
+            <div class="rate-row">
+                <div class="rate-col-currency">
+                    <div class="rate-icon bg-eth">Ξ</div>
+                    <div class="rate-info">
+                        <span class="rate-name">Ethereum</span>
+                        <span class="rate-sub">ETH</span>
+                    </div>
                 </div>
-                <div class="rate-prices">
-                    <span class="price-buy" id="price-eth">Loading...</span>
-                </div>
+                <div class="rate-price" id="eth-buy">Loading...</div>
+                <div class="rate-price" id="eth-sell">Loading...</div>
             </div>
+
+            <!-- USDT ERC20 -->
+            <div class="rate-row" style="border-bottom: none;">
+                <div class="rate-col-currency">
+                    <div class="rate-icon bg-tether-erc">T</div>
+                    <div class="rate-info">
+                        <span class="rate-name">Tether</span>
+                        <span class="rate-sub">USDT ERC20</span>
+                    </div>
+                </div>
+                <div class="rate-price" id="usdt-erc-buy">Loading...</div>
+                <div class="rate-price" id="usdt-erc-sell">Loading...</div>
+            </div>
+
         </div>
 
         <!-- Actions -->

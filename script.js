@@ -40,6 +40,8 @@ function initUserProfile() {
 
 async function fetchPrices() {
     try {
+        const rubRate = prices.USD_RUB;
+
         // Fetch BTC and ETH prices in USDT from Binance
         const [btcRes, ethRes] = await Promise.all([
             fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'),
@@ -52,16 +54,29 @@ async function fetchPrices() {
         if (btcData.price) prices.BTC = parseFloat(btcData.price);
         if (ethData.price) prices.ETH = parseFloat(ethData.price);
 
-        // Update UI
-        // Assuming we want to show price in RUB approx, we multiply by USD_RUB
-        // Or if the design implies USDT price, we show that.
-        // Based on "77.9700 P" in screenshot, it's RUB.
+        // -- Update UI for 4 Rows, 2 Columns Each (Buy/Sell) --
 
-        const rubRate = prices.USD_RUB; // Fixed for now or could fetch freely
+        // Helper to format currency
+        const fmt = (val) => val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' ₽';
 
-        document.getElementById('price-usdt').textContent = `${rubRate.toFixed(2)} ₽`;
-        document.getElementById('price-btc').textContent = `${(prices.BTC * rubRate).toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽`;
-        document.getElementById('price-eth').textContent = `${(prices.ETH * rubRate).toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽`;
+        // 1. Tether (USDT TRC20)
+        // Buy = Base Rate, Sell = Base Rate * 0.98 (spread mock)
+        document.getElementById('usdt-trc-buy').textContent = fmt(rubRate);
+        document.getElementById('usdt-trc-sell').textContent = fmt(rubRate * 0.985);
+
+        // 2. Bitcoin (BTC)
+        const btcRub = prices.BTC * rubRate;
+        document.getElementById('btc-buy').textContent = fmt(btcRub);
+        document.getElementById('btc-sell').textContent = fmt(btcRub * 0.98);
+
+        // 3. Ethereum (ETH)
+        const ethRub = prices.ETH * rubRate;
+        document.getElementById('eth-buy').textContent = fmt(ethRub);
+        document.getElementById('eth-sell').textContent = fmt(ethRub * 0.98);
+
+        // 4. Tether (USDT ERC20) - Same as TRC20 usually
+        document.getElementById('usdt-erc-buy').textContent = fmt(rubRate);
+        document.getElementById('usdt-erc-sell').textContent = fmt(rubRate * 0.985);
 
     } catch (e) {
         console.error("Failed to fetch prices:", e);
@@ -69,14 +84,14 @@ async function fetchPrices() {
 }
 
 function updateRates() {
-    // Mock logic: changing city might change the local cash rate
+    // Mock logic
     const city = document.getElementById('city-selector').value;
     if (city === 'Dubai') {
-        prices.USD_RUB = 100.0; // Example: more expensive there
+        prices.USD_RUB = 100.0;
     } else {
         prices.USD_RUB = 98.5;
     }
-    fetchPrices(); // Re-render
+    fetchPrices();
 }
 
 // Modal Logic
@@ -109,7 +124,8 @@ function openSettings() {
 }
 
 function openSupport() {
-    tg.openTelegramLink('https://t.me/rexes_support_bot');
+    // UPDATED LINK
+    tg.openTelegramLink('https://t.me/rexes_support');
 }
 
 function submitOrder() {

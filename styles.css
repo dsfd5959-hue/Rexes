@@ -100,10 +100,13 @@ body {
     width: 100%;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    padding: 16px;
-    border-radius: var(--radius-md);
+    padding: 12px;
+    /* Reduced from 16px */
+    border-radius: var(--radius-lg);
+    /* Increased radius for pill-like look */
     color: white;
-    font-size: 16px;
+    font-size: 15px;
+    /* Slightly smaller font */
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -112,29 +115,42 @@ body {
     cursor: pointer;
     appearance: none;
     text-align: center;
+    text-align-last: center;
 }
 
 /* Rates Table */
 .rates-title {
     font-size: 18px;
     font-weight: 700;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
+    /* Reduced from 12px */
 }
 
 .rates-header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
     padding: 0 10px;
     color: var(--text-secondary);
     font-size: 12px;
     margin-bottom: 8px;
+    text-align: right;
+}
+
+.rates-header span:first-child {
+    text-align: left;
 }
 
 .rate-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
     align-items: center;
     padding: 14px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rate-col-currency {
+    display: flex;
+    align-items: center;
 }
 
 .rate-icon {
@@ -144,55 +160,58 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 12px;
+    margin-right: 10px;
     font-weight: bold;
     font-size: 14px;
+    flex-shrink: 0;
 }
 
 .bg-tether {
+    background: #FF453A;
+    color: white;
+}
+
+/* Reddish like in screenshot 2 */
+.bg-tether-erc {
     background: #26A17B;
     color: white;
 }
 
+/* Green like in screenshot 2 */
 .bg-btc {
     background: #F7931A;
     color: white;
 }
 
 .bg-eth {
-    background: #627EEA;
+    background: #8E8E93;
     color: white;
 }
 
+/* Greyish ether icon in screen 2 */
+
 .rate-info {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .rate-name {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    display: block;
+    color: white;
+    line-height: 1.2;
 }
 
 .rate-sub {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-secondary);
 }
 
-.rate-prices {
-    text-align: right;
-}
-
-.price-buy {
-    font-size: 15px;
-    font-weight: 600;
-    display: block;
-}
-
-.price-sell {
+.rate-price {
     font-size: 13px;
-    color: var(--text-secondary);
-    display: block;
+    font-weight: 600;
+    color: white;
+    text-align: right;
 }
 
 /* Buttons */
