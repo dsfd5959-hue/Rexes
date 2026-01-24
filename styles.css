@@ -113,9 +113,10 @@ body {
     justify-content: center;
     gap: 10px;
     cursor: pointer;
-    appearance: none;
     text-align: center;
-    text-align-last: center;
+    user-select: none;
+    -webkit-user-select: none;
+    /* Safari */
 }
 
 /* Rates Table */
