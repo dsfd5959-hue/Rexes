@@ -122,8 +122,17 @@ body {
 .rates-title {
     font-size: 18px;
     font-weight: 700;
-    margin-bottom: 4px;
-    /* Reduced from 12px */
+    margin-bottom: 0px;
+    line-height: 1.2;
+}
+
+.rates-subtitle {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 16px;
+    margin-top: -8px;
+    /* Pull closer visually */
+    line-height: 1.2;
 }
 
 .rates-header {
