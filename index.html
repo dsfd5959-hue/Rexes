@@ -4,11 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rexes Exchange</title>
+    <title>Rexes MiniApp</title>
     <!-- Telegram SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -17,52 +19,93 @@
     <div class="app-container fade-in">
 
         <!-- Header -->
-        <header>
-            <h1 id="header-greeting">Привет! 👋</h1>
-            <p class="subtitle">Быстрый обмен криптовалют</p>
-        </header>
-
-        <!-- Exchange Card -->
-        <section class="card">
-            <h2>Обмен</h2>
-
-            <label class="label">Отдаете</label>
-            <div class="input-group">
-                <input type="number" id="amount-in" placeholder="0" oninput="calculateExchange('in')">
-                <span class="currency-badge">USDT</span>
+        <div class="header-profile">
+            <div class="profile-info">
+                <div id="avatar" class="avatar-placeholder">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="user-text">
+                    <h1 id="user-name">Guest</h1>
+                    <p id="user-username">@loading</p>
+                </div>
             </div>
-
-            <label class="label">Получаете (примерно)</label>
-            <div class="input-group">
-                <input type="number" id="amount-out" placeholder="0" oninput="calculateExchange('out')">
-                <span class="currency-badge">RUB</span>
+            <div class="settings-btn" onclick="openSettings()">
+                <i class="fa-solid fa-gear" style="color: #fff;"></i>
             </div>
+        </div>
 
-            <p class="label" style="text-align: right; margin-top: 8px;">Курс: 1 USDT = 98.00 RUB</p>
-        </section>
+        <!-- Title Section -->
+        <div>
+            <h2 class="section-title">Курсы</h2>
+            <p class="section-subtitle">Валюта и курс зависит от выбранного города</p>
+        </div>
 
-        <!-- Details Card -->
-        <section class="card">
-            <h2>Детали заявки</h2>
-
-            <label class="label">Город</label>
-            <select id="city" class="text-input">
-                <option value="Москва">Москва</option>
-                <option value="Санкт-Петербург">Санкт-Петербург</option>
-                <option value="Дубай">Дубай</option>
-                <option value="Стамбул">Стамбул</option>
+        <!-- Big Selectors -->
+        <div class="selectors-area">
+            <!-- City Selector -->
+            <select id="city" class="big-selector">
+                <option value="Москва">📍 Россия, г. Москва</option>
+                <option value="Санкт-Петербург">📍 Россия, г. СПБ</option>
+                <option value="Дубай">🇦🇪 ОАЭ, Дубай</option>
             </select>
 
-            <label class="label">ФИО получателя</label>
-            <input type="text" id="fio" class="text-input" placeholder="Иванов Иван Иванович">
+            <!-- Currency Out Selector -->
+            <select id="currency-out" class="big-selector">
+                <option value="RUB">🇷🇺 RUB</option>
+                <option value="AED">🇦🇪 AED</option>
+                <option value="USD">🇺🇸 USD</option>
+            </select>
+        </div>
 
-            <label class="label">Контакт для связи (Telegram)</label>
-            <input type="text" id="contact" class="text-input" placeholder="@username">
-        </section>
+        <!-- Pseudo-List Exchange Form -->
+        <!-- In the design, this looks like a list of coins. We will use it as Input Fields. -->
+        <div class="exchange-list">
+            <div
+                style="display: flex; justify-content: space-between; color: #888; font-size: 12px; margin-bottom: 8px; padding: 0 4px;">
+                <span>Валюта</span>
+                <span>Сумма</span>
+            </div>
 
-        <!-- Action -->
+            <!-- USDT Input Row -->
+            <div class="trade-row">
+                <div class="trade-icon bg-tether">T</div>
+                <div class="trade-info">
+                    <span class="trade-name">Tether (Вы отдаете)</span>
+                    <span class="trade-sub">USDT TRC20</span>
+                </div>
+                <input type="number" id="amount-in" class="trade-input" placeholder="0"
+                    oninput="calculateExchange('in')">
+            </div>
+
+            <!-- RUB Output Row (Visual only, mapped to underlying logic) -->
+            <div class="trade-row" style="border-bottom: none;">
+                <div class="trade-icon bg-btc" style="background: #4682B4;">R</div>
+                <div class="trade-info">
+                    <span class="trade-name">Russian Ruble (Вы получаете)</span>
+                    <span class="trade-sub">RUB</span>
+                </div>
+                <input type="number" id="amount-out" class="trade-input" placeholder="0"
+                    oninput="calculateExchange('out')">
+            </div>
+        </div>
+
+        <!-- Hidden inputs for logic compatibility -->
+        <div class="hidden-logic" style="margin-top: 20px;">
+            <h2 class="section-title">Данные получателя</h2>
+            <input type="text" id="fio" class="big-selector"
+                style="text-align: left; background: rgba(255,255,255,0.05); border:none;" placeholder="ФИО Получателя">
+            <input type="text" id="contact" class="big-selector"
+                style="text-align: left; background: rgba(255,255,255,0.05); border:none;" placeholder="Ваш @username">
+        </div>
+
+
+        <!-- Actions -->
         <button class="btn-primary" onclick="submitOrder()">
-            ОФОРМИТЬ ОБМЕН
+            <i class="fa-solid fa-arrow-right-arrow-left"></i> Обменять
+        </button>
+
+        <button class="btn-secondary" onclick="openSupport()">
+            <i class="fa-regular fa-comment-dots"></i> Поддержка
         </button>
 
     </div>
