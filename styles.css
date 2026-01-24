@@ -130,7 +130,7 @@ body {
     color: var(--text-secondary);
     font-size: 13px;
     margin-bottom: 16px;
-    margin-top: -8px;
+    margin-top: -12px;
     /* Pull closer visually */
     line-height: 1.2;
 }
@@ -339,4 +339,62 @@ body {
     color: white;
     font-size: 18px;
     outline: none;
+}
+
+/* Location Sheet Styles */
+.modal-handle-bar {
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+}
+
+.modal-desc {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.location-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.location-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 16px;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.location-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.location-item.selected {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.check-icon {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
 }

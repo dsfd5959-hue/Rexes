@@ -84,14 +84,14 @@ async function fetchPrices() {
 }
 
 function updateRates() {
-    // Mock logic
-    const city = document.getElementById('city-selector').value;
+    // Mock logic: changing city might change the local cash rate
+    const city = currentCityId;
     if (city === 'Dubai') {
-        prices.USD_RUB = 100.0;
+        prices.USD_RUB = 100.0; // Example: more expensive there
     } else {
         prices.USD_RUB = 98.5;
     }
-    fetchPrices();
+    fetchPrices(); // Re-render
 }
 
 // Modal Logic
@@ -103,8 +103,12 @@ function toggleModal(show) {
         tg.BackButton.onClick(() => toggleModal(false));
     } else {
         modal.classList.remove('active');
-        tg.BackButton.hide();
-        tg.BackButton.offClick();
+        // If location modal is not open, hide back button
+        const locModal = document.getElementById('location-modal');
+        if (!locModal || !locModal.classList.contains('active')) {
+            tg.BackButton.hide();
+            tg.BackButton.offClick();
+        }
     }
 }
 
@@ -133,7 +137,7 @@ function submitOrder() {
     const amountOut = document.getElementById('amount-out').value;
     const fio = document.getElementById('fio').value;
     const contact = document.getElementById('contact').value;
-    const city = document.getElementById('city-selector').value;
+    const city = currentCityId; // Use global variable
 
     if (!amountIn || !fio || !contact) {
         tg.showAlert("Заполните все поля!");
@@ -156,3 +160,93 @@ function submitOrder() {
     tg.sendData(JSON.stringify(data));
     setTimeout(() => tg.close(), 50);
 }
+
+// -- Location Modal Logic --
+
+const cityData = [
+    { name: "ОАЭ, г. Дубай", id: "Dubai" },
+    { name: "Россия, г. Санкт-Петербург", id: "Saint-Petersburg" },
+    { name: "Грузия, г. Тбилиси", id: "Tbilisi" },
+    { name: "Турция, г. Стамбул", id: "Istanbul" },
+    { name: "Армения, г. Ереван", id: "Yerevan" },
+    { name: "Россия, г. Москва", id: "Moscow", default: true },
+    { name: "Россия, г. Краснодар", id: "Krasnodar" },
+    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo" },
+    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires" },
+    { name: "Россия, г. Новосибирск", id: "Novosibirsk" }
+];
+
+let currentCityId = "Moscow";
+
+function toggleLocationModal(show) {
+    const modal = document.getElementById('location-modal');
+    if (show) {
+        renderLocationList();
+        modal.classList.add('active');
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => toggleLocationModal(false));
+    } else {
+        modal.classList.remove('active');
+        // Restore BackButton only if not initial deep view (simplified logic)
+        tg.BackButton.hide();
+        tg.BackButton.offClick();
+    }
+}
+
+function renderLocationList() {
+    const container = document.getElementById('location-list');
+    container.innerHTML = '';
+
+    cityData.forEach(city => {
+        const item = document.createElement('div');
+        item.className = `location-item ${city.id === currentCityId ? 'selected' : ''}`;
+        item.onclick = () => selectCity(city);
+
+        let checkMark = '';
+        if (city.id === currentCityId) {
+            checkMark = `<div class="check-icon"><i class="fa-solid fa-check"></i></div>`;
+        }
+
+        item.innerHTML = `
+            <span>${city.name}</span>
+            ${checkMark}
+        `;
+
+        container.appendChild(item);
+    });
+}
+
+function selectCity(city) {
+    currentCityId = city.id;
+
+    // Update Main UI Button
+    // Map text correctly? The design uses simplified text in button vs full text in list
+    // Logic: Use full text or mapping? Let's use simplified mapping or just the name from list
+    // The previous selector used "📍 Москва", let's reconstruct that style
+
+    let btnText = "📍 " + city.name;
+    // Cleanup country prefix for button to keep it short if needed, 
+    // or keep full as user asked for "concise" earlier but now "panel with visible cities".
+    // Let's shorten it for the button: 
+    if (city.name.includes("Россия, г.")) btnText = "📍 " + city.name.replace("Россия, г. ", "");
+    else if (city.name.includes("ОАЭ, г.")) btnText = "🇦🇪 " + city.name.replace("ОАЭ, г. ", "");
+    else if (city.name.includes("Турция, г.")) btnText = "🇹🇷 " + city.name.replace("Турция, г. ", "");
+    else if (city.name.includes("Грузия, г.")) btnText = "🇬🇪 " + city.name.replace("Грузия, г. ", "");
+    else if (city.name.includes("Армения, г.")) btnText = "🇦🇲 " + city.name.replace("Армения, г. ", "");
+    else if (city.name.includes("Бразилия, г.")) btnText = "🇧🇷 " + city.name.replace("Бразилия, г. ", "");
+    else if (city.name.includes("Аргентина, г.")) btnText = "🇦🇷 " + city.name.replace("Аргентина, г. ", "");
+
+    document.getElementById('current-city-label').textContent = btnText;
+
+    // Close Modal
+    toggleLocationModal(false);
+
+    // Update Rates logic
+    updateRates();
+}
+
+// Override updateRates to use currentCityId
+// function updateRates() { ... } needs modification in existing code or we override it here?
+// The submitOrder function also uses document.getElementById('city-selector').value which is GONE.
+// We need to fix submitOrder and updateRates.
+

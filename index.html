@@ -39,18 +39,10 @@
 
         <!-- Selectors -->
         <div class="selectors-area">
-            <select id="city-selector" class="big-selector" onchange="updateRates()">
-                <option value="Moscow">📍 Москва</option>
-                <option value="Saint-Petersburg">📍 Санкт-Петербург</option>
-                <option value="Novosibirsk">📍 Новосибирск</option>
-                <option value="Krasnodar">📍 Краснодар</option>
-                <option value="Dubai">🇦🇪 Дубай</option>
-                <option value="Istanbul">🇹🇷 Стамбул</option>
-                <option value="Tbilisi">🇬🇪 Тбилиси</option>
-                <option value="Yerevan">🇦🇲 Ереван</option>
-                <option value="Sao-Paulo">🇧🇷 Сан-Паулу</option>
-                <option value="Buenos-Aires">🇦🇷 Буэнос-Айрес</option>
-            </select>
+            <!-- Custom City Trigger -->
+            <div id="city-selector" class="big-selector" onclick="toggleLocationModal(true)">
+                <span id="current-city-label">📍 Москва</span>
+            </div>
 
             <div class="big-selector">
                 <span>🇷🇺 RUB</span>
@@ -159,6 +151,24 @@
             </div>
 
             <button class="btn-primary" onclick="submitOrder()">Подтвердить</button>
+        </div>
+    </div>
+
+    <!-- Location Modal -->
+    <div class="modal-overlay" id="location-modal">
+        <div class="modal-sheet" style="padding-top: 12px;">
+            <div class="modal-handle-bar"></div>
+            <div class="modal-header" style="justify-content: flex-start; margin-bottom: 8px;">
+                <span class="modal-title">Локация</span>
+            </div>
+            <p class="modal-desc">
+                Выберите офис, который будет выбран по умолчанию при выборе офиса, в котором вы хотите обменять ваши
+                активы
+            </p>
+
+            <div class="location-list" id="location-list">
+                <!-- Items will be injected by JS -->
+            </div>
         </div>
     </div>
 
