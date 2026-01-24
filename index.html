@@ -9,9 +9,9 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for Icons -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom Styles -->
+    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -25,7 +25,7 @@
                     <i class="fa-solid fa-user"></i>
                 </div>
                 <div class="user-text">
-                    <h1 id="user-name">Guest</h1>
+                    <h1 id="user-name">Загрузка...</h1>
                     <p id="user-username">@loading</p>
                 </div>
             </div>
@@ -34,73 +34,69 @@
             </div>
         </div>
 
-        <!-- Title Section -->
-        <div>
-            <h2 class="section-title">Курсы</h2>
-            <p class="section-subtitle">Валюта и курс зависит от выбранного города</p>
-        </div>
+        <h2 class="rates-title">Курсы</h2>
+        <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Валюта и курс зависят от выбранного города</p>
 
-        <!-- Big Selectors -->
+        <!-- Selectors -->
         <div class="selectors-area">
-            <!-- City Selector -->
-            <select id="city" class="big-selector">
-                <option value="Москва">📍 Россия, г. Москва</option>
-                <option value="Санкт-Петербург">📍 Россия, г. СПБ</option>
-                <option value="Дубай">🇦🇪 ОАЭ, Дубай</option>
+            <select id="city-selector" class="big-selector" onchange="updateRates()">
+                <option value="Moscow">📍 Россия, г. Москва</option>
+                <option value="Dubai">🇦🇪 ОАЭ, Дубай</option>
             </select>
 
-            <!-- Currency Out Selector -->
-            <select id="currency-out" class="big-selector">
-                <option value="RUB">🇷🇺 RUB</option>
-                <option value="AED">🇦🇪 AED</option>
-                <option value="USD">🇺🇸 USD</option>
-            </select>
+            <div class="big-selector">
+                <span>🇷🇺 RUB</span>
+            </div>
         </div>
 
-        <!-- Pseudo-List Exchange Form -->
-        <!-- In the design, this looks like a list of coins. We will use it as Input Fields. -->
-        <div class="exchange-list">
-            <div
-                style="display: flex; justify-content: space-between; color: #888; font-size: 12px; margin-bottom: 8px; padding: 0 4px;">
+        <!-- Rates Table -->
+        <div class="rates-table">
+            <div class="rates-header">
                 <span>Валюта</span>
-                <span>Сумма</span>
+                <span>Цена (Binance)</span>
             </div>
 
-            <!-- USDT Input Row -->
-            <div class="trade-row">
-                <div class="trade-icon bg-tether">T</div>
-                <div class="trade-info">
-                    <span class="trade-name">Tether (Вы отдаете)</span>
-                    <span class="trade-sub">USDT TRC20</span>
+            <!-- USDT -->
+            <div class="rate-row">
+                <div class="rate-icon bg-tether">T</div>
+                <div class="rate-info">
+                    <span class="rate-name">Tether</span>
+                    <span class="rate-sub">USDT TRC20</span>
                 </div>
-                <input type="number" id="amount-in" class="trade-input" placeholder="0"
-                    oninput="calculateExchange('in')">
+                <div class="rate-prices">
+                    <span class="price-buy" id="price-usdt">Loading...</span>
+                    <span class="price-sell">1 USDT</span>
+                </div>
             </div>
 
-            <!-- RUB Output Row (Visual only, mapped to underlying logic) -->
-            <div class="trade-row" style="border-bottom: none;">
-                <div class="trade-icon bg-btc" style="background: #4682B4;">R</div>
-                <div class="trade-info">
-                    <span class="trade-name">Russian Ruble (Вы получаете)</span>
-                    <span class="trade-sub">RUB</span>
+            <!-- BTC -->
+            <div class="rate-row">
+                <div class="rate-icon bg-btc">₿</div>
+                <div class="rate-info">
+                    <span class="rate-name">Bitcoin</span>
+                    <span class="rate-sub">BTC</span>
                 </div>
-                <input type="number" id="amount-out" class="trade-input" placeholder="0"
-                    oninput="calculateExchange('out')">
+                <div class="rate-prices">
+                    <span class="price-buy" id="price-btc">Loading...</span>
+                    <!-- <span class="price-sell">Продать</span> -->
+                </div>
+            </div>
+
+            <!-- ETH -->
+            <div class="rate-row" style="border-bottom: none;">
+                <div class="rate-icon bg-eth">Ξ</div>
+                <div class="rate-info">
+                    <span class="rate-name">Ethereum</span>
+                    <span class="rate-sub">ETH</span>
+                </div>
+                <div class="rate-prices">
+                    <span class="price-buy" id="price-eth">Loading...</span>
+                </div>
             </div>
         </div>
-
-        <!-- Hidden inputs for logic compatibility -->
-        <div class="hidden-logic" style="margin-top: 20px;">
-            <h2 class="section-title">Данные получателя</h2>
-            <input type="text" id="fio" class="big-selector"
-                style="text-align: left; background: rgba(255,255,255,0.05); border:none;" placeholder="ФИО Получателя">
-            <input type="text" id="contact" class="big-selector"
-                style="text-align: left; background: rgba(255,255,255,0.05); border:none;" placeholder="Ваш @username">
-        </div>
-
 
         <!-- Actions -->
-        <button class="btn-primary" onclick="submitOrder()">
+        <button class="btn-primary" onclick="toggleModal(true)">
             <i class="fa-solid fa-arrow-right-arrow-left"></i> Обменять
         </button>
 
@@ -108,6 +104,38 @@
             <i class="fa-regular fa-comment-dots"></i> Поддержка
         </button>
 
+    </div>
+
+    <!-- Exchange Modal -->
+    <div class="modal-overlay" id="exchange-modal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <span class="modal-title">Обмен</span>
+                <button class="close-btn" onclick="toggleModal(false)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="modal-input-group">
+                <label class="modal-label">Отдаете (USDT)</label>
+                <input type="number" id="amount-in" class="modal-input" placeholder="0" oninput="calculateExchange()">
+            </div>
+
+            <div class="modal-input-group">
+                <label class="modal-label">Получаете (RUB)</label>
+                <input type="number" id="amount-out" class="modal-input" placeholder="0" readonly>
+            </div>
+
+            <div class="modal-input-group">
+                <label class="modal-label">ФИО Получателя</label>
+                <input type="text" id="fio" class="modal-input" placeholder="Иванов Иван">
+            </div>
+
+            <div class="modal-input-group">
+                <label class="modal-label">Ваш контакт</label>
+                <input type="text" id="contact" class="modal-input" placeholder="@username">
+            </div>
+
+            <button class="btn-primary" onclick="submitOrder()">Подтвердить</button>
+        </div>
     </div>
 
     <script src="script.js"></script>
