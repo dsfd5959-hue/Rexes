@@ -421,3 +421,58 @@ body {
     justify-content: center;
     font-size: 12px;
 }
+
+/* Settings Modal Styles */
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 16px;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.settings-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-icon {
+    width: 24px;
+    display: flex;
+    justify-content: center;
+    color: var(--text-primary);
+}
+
+.arrow-icon {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.settings-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lang-value {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}

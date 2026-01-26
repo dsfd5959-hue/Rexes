@@ -176,6 +176,62 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <span class="modal-title" id="t-settings-title">Настройки</span>
+                <button class="close-btn" onclick="toggleSettingsModal(false)"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="settings-list">
+                <div class="settings-item" onclick="toggleLocationModal(true); toggleSettingsModal(false)">
+                    <div class="settings-left">
+                        <div class="settings-icon"><i class="fa-solid fa-map-pin"></i></div>
+                        <span id="t-default-location">Локация по умолчанию</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </div>
+
+                <div class="settings-item">
+                    <div class="settings-left">
+                        <div class="settings-icon"><i class="fa-solid fa-file-invoice"></i></div>
+                        <span id="t-orders">Заявки</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </div>
+
+                <div class="settings-item" onclick="toggleLanguage()">
+                    <div class="settings-left">
+                        <div class="settings-icon"><i class="fa-solid fa-globe"></i></div>
+                        <span id="t-language">Язык</span>
+                    </div>
+                    <div class="settings-right">
+                        <span class="lang-value" id="current-lang-code">RU</span>
+                        <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                    </div>
+                </div>
+
+                <div class="settings-item" onclick="openSupport()">
+                    <div class="settings-left">
+                        <div class="settings-icon"><i class="fa-solid fa-comment-dots"></i></div>
+                        <span id="t-support">Поддержка</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </div>
+
+                <div class="settings-item">
+                    <div class="settings-left">
+                        <div class="settings-icon"><i class="fa-solid fa-circle-question"></i></div>
+                        <span id="t-faq">Вопросы и ответы</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 

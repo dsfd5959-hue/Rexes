@@ -22,14 +22,158 @@ const RATES = {
     ARS: { rate: 980.0, symbol: '$' }
 };
 
+// Translations
+const translations = {
+    ru: {
+        rates: "Курсы",
+        subtitle: "Валюта и курс зависят от выбранного города",
+        buy: "Купить",
+        sell: "Продать",
+        tether_trc: "Tether",
+        bitcoin: "Bitcoin",
+        ethereum: "Ethereum",
+        exchange_btn: "Обменять",
+        support_btn: "Поддержка",
+        settings_title: "Настройки",
+        default_location: "Локация по умолчанию",
+        orders: "Заявки",
+        language: "Язык",
+        support: "Поддержка",
+        faq: "Вопросы и ответы",
+        modal_exchange_title: "Обмен",
+        modal_give: "Отдаете (USDT)",
+        modal_get: "Получаете",
+        modal_fio: "ФИО Получателя",
+        modal_contact: "Ваш контакт",
+        modal_confirm: "Подтвердить",
+        modal_location_title: "Локация",
+        modal_location_desc: "Выберите офис, который будет выбран по умолчанию при выборе офиса, в котором вы хотите обменять ваши активы",
+        loading: "Загрузка...",
+        fill_fields: "Заполните все поля!",
+        settings_soon: "Настройки скоро будут доступны!"
+    },
+    en: {
+        rates: "Rates",
+        subtitle: "Currency and rate depend on the selected city",
+        buy: "Buy",
+        sell: "Sell",
+        tether_trc: "Tether",
+        bitcoin: "Bitcoin",
+        ethereum: "Ethereum",
+        exchange_btn: "Exchange",
+        support_btn: "Support",
+        settings_title: "Settings",
+        default_location: "Default Location",
+        orders: "Orders",
+        language: "Language",
+        support: "Support",
+        faq: "FAQ",
+        modal_exchange_title: "Exchange",
+        modal_give: "You Give (USDT)",
+        modal_get: "You Get",
+        modal_fio: "Recipient Name",
+        modal_contact: "Your Contact",
+        modal_confirm: "Confirm",
+        modal_location_title: "Location",
+        modal_location_desc: "Choose the office that will be selected by default when choosing the office where you want to exchange your assets",
+        loading: "Loading...",
+        fill_fields: "Fill all fields!",
+        settings_soon: "Settings coming soon!"
+    }
+};
+
+let currentLang = 'ru';
+
 document.addEventListener('DOMContentLoaded', () => {
     tg.expand();
     initUserProfile();
     fetchPrices();
+    setLanguage('ru'); // Default to RU
 
     // Refresh prices every 30 seconds
     setInterval(fetchPrices, 30000);
 });
+
+// ... (existing code)
+
+function openSettings() {
+    toggleSettingsModal(true);
+}
+
+function toggleSettingsModal(show) {
+    const modal = document.getElementById('settings-modal');
+    if (show) {
+        modal.classList.add('active');
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => toggleSettingsModal(false));
+    } else {
+        modal.classList.remove('active');
+        // Check if other modals are open before hiding back button
+        const locModal = document.getElementById('location-modal');
+        const exModal = document.getElementById('exchange-modal');
+        if ((!locModal || !locModal.classList.contains('active')) &&
+            (!exModal || !exModal.classList.contains('active'))) {
+            tg.BackButton.hide();
+            tg.BackButton.offClick();
+        }
+    }
+}
+
+function toggleLanguage() {
+    const newLang = currentLang === 'ru' ? 'en' : 'ru';
+    setLanguage(newLang);
+}
+
+function setLanguage(lang) {
+    currentLang = lang;
+    const t = translations[lang];
+
+    // Main Page
+    document.querySelector('.rates-title').textContent = t.rates;
+    document.querySelector('.rates-subtitle').textContent = t.subtitle;
+
+    const headers = document.querySelectorAll('.rates-header span');
+    if (headers.length >= 3) {
+        headers[0].textContent = lang === 'ru' ? 'Валюта' : 'Currency'; // Special case or add to dict
+        headers[1].textContent = t.buy;
+        headers[2].textContent = t.sell;
+    }
+
+    // Buttons
+    document.querySelector('.btn-primary').innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left"></i> ${t.exchange_btn}`;
+    document.querySelector('.btn-secondary').innerHTML = `<i class="fa-regular fa-comment-dots"></i> ${t.support_btn}`;
+
+    // Settings Modal
+    document.getElementById('t-settings-title').textContent = t.settings_title;
+    document.getElementById('t-default-location').textContent = t.default_location;
+    document.getElementById('t-orders').textContent = t.orders;
+    document.getElementById('t-language').textContent = t.language;
+    document.getElementById('t-support').textContent = t.support;
+    document.getElementById('t-faq').textContent = t.faq;
+    document.getElementById('current-lang-code').textContent = lang.toUpperCase();
+
+    // Exchange Modal
+    document.querySelector('#exchange-modal .modal-title').textContent = t.modal_exchange_title;
+    document.querySelectorAll('#exchange-modal .modal-label')[0].textContent = t.modal_give;
+    // Special handling for the dynamic currency label
+    const currencyLabel = document.getElementById('modal-currency-label');
+    const currencyCode = currencyLabel ? currencyLabel.textContent : 'RUB';
+    document.querySelectorAll('#exchange-modal .modal-label')[1].innerHTML = `${t.modal_get} (<span id="modal-currency-label">${currencyCode}</span>)`;
+
+    document.querySelectorAll('#exchange-modal .modal-label')[2].textContent = t.modal_fio;
+    document.querySelectorAll('#exchange-modal .modal-label')[3].textContent = t.modal_contact;
+    document.querySelector('#exchange-modal .btn-primary').textContent = t.modal_confirm;
+
+    // Location Modal
+    document.querySelector('#location-modal .modal-title').textContent = t.modal_location_title;
+    document.querySelector('#location-modal .modal-desc').textContent = t.modal_location_desc;
+
+    // User Profile Loading
+    const userName = document.getElementById('user-name');
+    if (userName.textContent === 'Загрузка...' || userName.textContent === 'Loading...') {
+        userName.textContent = t.loading;
+    }
+}
 
 
 function initUserProfile() {
