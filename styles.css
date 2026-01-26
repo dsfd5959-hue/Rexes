@@ -229,12 +229,13 @@ body {
 }
 
 .rate-price {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 500;
     color: white;
     text-align: right;
     text-shadow: none;
     -webkit-text-stroke: 0;
+    letter-spacing: -0.3px;
 }
 
 /* Buttons */
