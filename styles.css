@@ -121,6 +121,14 @@ body {
     font-family: inherit;
 }
 
+.currency-flag {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
 /* Rates Table */
 .rates-title {
     font-size: 18px;

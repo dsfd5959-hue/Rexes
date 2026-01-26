@@ -28,13 +28,20 @@ function initUserProfile() {
             document.getElementById('contact').value = '@' + user.username;
         }
 
-        // Generate Avatar Color
-        const colors = ['#FF5500', '#007AFF', '#34C759', '#AF52DE'];
-        const color = colors[user.id % colors.length];
-        const avatarEl = document.getElementById('avatar');
-        avatarEl.style.background = color;
-        avatarEl.style.border = 'none';
-        avatarEl.innerHTML = `<span style="font-size:20px; color:white;">${user.first_name[0]}</span>`;
+        if (user.photo_url) {
+            const avatarEl = document.getElementById('avatar');
+            avatarEl.style.background = 'none';
+            avatarEl.style.border = 'none';
+            avatarEl.innerHTML = `<img src="${user.photo_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        } else {
+            // Generate Avatar Color
+            const colors = ['#FF5500', '#007AFF', '#34C759', '#AF52DE'];
+            const color = colors[user.id % colors.length];
+            const avatarEl = document.getElementById('avatar');
+            avatarEl.style.background = color;
+            avatarEl.style.border = 'none';
+            avatarEl.innerHTML = `<span style="font-size:20px; color:white;">${user.first_name[0]}</span>`;
+        }
     }
 }
 
@@ -164,16 +171,16 @@ function submitOrder() {
 // -- Location Modal Logic --
 
 const cityData = [
-    { name: "ОАЭ, г. Дубай", id: "Dubai" },
-    { name: "Россия, г. Санкт-Петербург", id: "Saint-Petersburg" },
-    { name: "Грузия, г. Тбилиси", id: "Tbilisi" },
-    { name: "Турция, г. Стамбул", id: "Istanbul" },
-    { name: "Армения, г. Ереван", id: "Yerevan" },
-    { name: "Россия, г. Москва", id: "Moscow", default: true },
-    { name: "Россия, г. Краснодар", id: "Krasnodar" },
-    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo" },
-    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires" },
-    { name: "Россия, г. Новосибирск", id: "Novosibirsk" }
+    { name: "ОАЭ, г. Дубай", id: "Dubai", currency: "AED", flag: "ae" },
+    { name: "Россия, г. Санкт-Петербург", id: "Saint-Petersburg", currency: "RUB", flag: "ru" },
+    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "GEL", flag: "ge" },
+    { name: "Турция, г. Стамбул", id: "Istanbul", currency: "TRY", flag: "tr" },
+    { name: "Армения, г. Ереван", id: "Yerevan", currency: "AMD", flag: "am" },
+    { name: "Россия, г. Москва", id: "Moscow", default: true, currency: "RUB", flag: "ru" },
+    { name: "Россия, г. Краснодар", id: "Krasnodar", currency: "RUB", flag: "ru" },
+    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "BRL", flag: "br" },
+    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires", currency: "ARS", flag: "ar" },
+    { name: "Россия, г. Новосибирск", id: "Novosibirsk", currency: "RUB", flag: "ru" }
 ];
 
 let currentCityId = "Moscow";
@@ -224,19 +231,24 @@ function selectCity(city) {
     // Logic: Use full text or mapping? Let's use simplified mapping or just the name from list
     // The previous selector used "📍 Москва", let's reconstruct that style
 
-    let btnText = "📍 " + city.name;
-    // Cleanup country prefix for button to keep it short if needed, 
-    // or keep full as user asked for "concise" earlier but now "panel with visible cities".
-    // Let's shorten it for the button: 
-    if (city.name.includes("Россия, г.")) btnText = "📍 " + city.name.replace("Россия, г. ", "");
-    else if (city.name.includes("ОАЭ, г.")) btnText = "🇦🇪 " + city.name.replace("ОАЭ, г. ", "");
-    else if (city.name.includes("Турция, г.")) btnText = "🇹🇷 " + city.name.replace("Турция, г. ", "");
-    else if (city.name.includes("Грузия, г.")) btnText = "🇬🇪 " + city.name.replace("Грузия, г. ", "");
-    else if (city.name.includes("Армения, г.")) btnText = "🇦🇲 " + city.name.replace("Армения, г. ", "");
-    else if (city.name.includes("Бразилия, г.")) btnText = "🇧🇷 " + city.name.replace("Бразилия, г. ", "");
-    else if (city.name.includes("Аргентина, г.")) btnText = "🇦🇷 " + city.name.replace("Аргентина, г. ", "");
+    let cityName = city.name;
 
-    document.getElementById('current-city-label').textContent = btnText;
+    // Simplify city names for the button label
+    if (cityName.includes("Россия, г.")) cityName = cityName.replace("Россия, г. ", "");
+    else if (cityName.includes("ОАЭ, г.")) cityName = cityName.replace("ОАЭ, г. ", "");
+    else if (cityName.includes("Турция, г.")) cityName = cityName.replace("Турция, г. ", "");
+    else if (cityName.includes("Грузия, г.")) cityName = cityName.replace("Грузия, г. ", "");
+    else if (cityName.includes("Армения, г.")) cityName = cityName.replace("Армения, г. ", "");
+    else if (cityName.includes("Бразилия, г.")) cityName = cityName.replace("Бразилия, г. ", "");
+    else if (cityName.includes("Аргентина, г.")) cityName = cityName.replace("Аргентина, г. ", "");
+
+    document.getElementById('current-city-label').innerHTML = `<i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> ${cityName}`;
+
+    // Update Currency Selector
+    if (city.currency && city.flag) {
+        document.getElementById('currency-flag').src = `https://flagcdn.com/w80/${city.flag}.png`;
+        document.getElementById('currency-code').textContent = city.currency;
+    }
 
     // Close Modal
     toggleLocationModal(false);
