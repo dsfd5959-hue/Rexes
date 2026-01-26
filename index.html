@@ -40,9 +40,9 @@
         <!-- Selectors -->
         <div class="selectors-area">
             <!-- Custom City Trigger -->
-            <div id="city-selector" class="big-selector" onclick="toggleLocationModal(true)">
-                <span id="current-city-label">📍 Москва</span>
-            </div>
+            <button id="city-selector" class="big-selector" onclick="toggleLocationModal(true)">
+                <span id="current-city-label" style="pointer-events: none;">📍 Москва</span>
+            </button>
 
             <div class="big-selector">
                 <span>🇷🇺 RUB</span>
@@ -156,10 +156,11 @@
 
     <!-- Location Modal -->
     <div class="modal-overlay" id="location-modal">
-        <div class="modal-sheet" style="padding-top: 12px;">
-            <div class="modal-handle-bar"></div>
-            <div class="modal-header" style="justify-content: flex-start; margin-bottom: 8px;">
+        <div class="modal-sheet">
+            <div class="modal-header">
                 <span class="modal-title">Локация</span>
+                <button class="close-btn" onclick="toggleLocationModal(false)"><i
+                        class="fa-solid fa-xmark"></i></button>
             </div>
             <p class="modal-desc">
                 Выберите офис, который будет выбран по умолчанию при выборе офиса, в котором вы хотите обменять ваши

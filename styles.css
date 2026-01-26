@@ -117,6 +117,7 @@ body {
     user-select: none;
     -webkit-user-select: none;
     /* Safari */
+    font-family: inherit;
 }
 
 /* Rates Table */
