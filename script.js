@@ -6,20 +6,20 @@ let prices = {
     USDT: 1.00,
     BTC: 0,
     ETH: 0,
-    currentRate: 98.5,     // Current pair rate (e.g. USD to RUB)
+    currentRate: 76.0,     // Current pair rate (e.g. USD to RUB)
     currentCurrency: 'RUB', // Current active currency code
     currentSymbol: '₽'      // Current active currency symbol
 };
 
 // Exchange Rates Mock (USD to X)
 const RATES = {
-    RUB: { rate: 98.5, symbol: '₽' },
-    AED: { rate: 3.67, symbol: 'Ar' },
-    GEL: { rate: 2.70, symbol: '₾' },
-    TRY: { rate: 34.20, symbol: '₺' },
-    AMD: { rate: 405.0, symbol: '֏' },
-    BRL: { rate: 5.75, symbol: 'R$' },
-    ARS: { rate: 980.0, symbol: '$' }
+    RUB: { buy: 78.2100, sell: 76.6600, symbol: '₽' },
+    AED: { buy: 3.67, sell: 3.61, symbol: 'Ar' },
+    GEL: { buy: 2.70, sell: 2.65, symbol: '₾' },
+    TRY: { buy: 34.20, sell: 33.50, symbol: '₺' },
+    AMD: { buy: 405.0, sell: 395.0, symbol: '֏' },
+    BRL: { buy: 5.75, sell: 5.60, symbol: 'R$' },
+    ARS: { buy: 980.0, sell: 960.0, symbol: '$' }
 };
 
 // Translations
@@ -205,7 +205,8 @@ function initUserProfile() {
 
 async function fetchPrices() {
     try {
-        const rate = prices.currentRate;
+        const buyRate = prices.currentBuy;
+        const sellRate = prices.currentSell;
         const symbol = prices.currentSymbol;
 
         // Fetch BTC and ETH prices in USDT from Binance
@@ -226,23 +227,24 @@ async function fetchPrices() {
         const fmt = (val) => val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' ' + symbol;
 
         // 1. Tether (USDT TRC20)
-        // Buy = Base Rate, Sell = Base Rate * 0.98 (spread mock)
-        document.getElementById('usdt-trc-buy').textContent = fmt(rate);
-        document.getElementById('usdt-trc-sell').textContent = fmt(rate * 0.985);
+        document.getElementById('usdt-trc-buy').textContent = fmt(buyRate);
+        document.getElementById('usdt-trc-sell').textContent = fmt(sellRate);
 
         // 2. Bitcoin (BTC)
-        const btcLocal = prices.BTC * rate;
-        document.getElementById('btc-buy').textContent = fmt(btcLocal);
-        document.getElementById('btc-sell').textContent = fmt(btcLocal * 0.98);
+        const btcBuy = prices.BTC * buyRate;
+        const btcSell = prices.BTC * sellRate;
+        document.getElementById('btc-buy').textContent = fmt(btcBuy);
+        document.getElementById('btc-sell').textContent = fmt(btcSell);
 
         // 3. Ethereum (ETH)
-        const ethLocal = prices.ETH * rate;
-        document.getElementById('eth-buy').textContent = fmt(ethLocal);
-        document.getElementById('eth-sell').textContent = fmt(ethLocal * 0.98);
+        const ethBuy = prices.ETH * buyRate;
+        const ethSell = prices.ETH * sellRate;
+        document.getElementById('eth-buy').textContent = fmt(ethBuy);
+        document.getElementById('eth-sell').textContent = fmt(ethSell);
 
         // 4. Tether (USDT ERC20)
-        document.getElementById('usdt-erc-buy').textContent = fmt(rate);
-        document.getElementById('usdt-erc-sell').textContent = fmt(rate * 0.985);
+        document.getElementById('usdt-erc-buy').textContent = fmt(buyRate);
+        document.getElementById('usdt-erc-sell').textContent = fmt(sellRate);
 
     } catch (e) {
         console.error("Failed to fetch prices:", e);
@@ -255,14 +257,28 @@ function updateRates() {
 
     if (city && city.currency && RATES[city.currency]) {
         const rateData = RATES[city.currency];
-        prices.currentRate = rateData.rate;
+
+        // Check if explicit buy/sell exists, otherwise calculate mock spread
+        if (rateData.buy !== undefined && rateData.sell !== undefined) {
+            prices.currentBuy = rateData.buy;
+            prices.currentSell = rateData.sell;
+            prices.currentRate = rateData.buy; // Use Buy rate for calculator base
+        } else {
+            // Fallback for others: Buy = Rate, Sell = Rate * 0.985
+            prices.currentBuy = rateData.rate;
+            prices.currentSell = rateData.rate * 0.985;
+            prices.currentRate = rateData.rate;
+        }
+
         prices.currentCurrency = city.currency;
         prices.currentSymbol = rateData.symbol;
     } else {
         // Fallback to RUB
-        prices.currentRate = RATES.RUB.rate;
+        prices.currentBuy = RATES.RUB.buy;
+        prices.currentSell = RATES.RUB.sell;
         prices.currentCurrency = 'RUB';
         prices.currentSymbol = RATES.RUB.symbol;
+        prices.currentRate = RATES.RUB.buy;
     }
 
     // Update Modal Label
