@@ -178,6 +178,13 @@ body {
     flex-shrink: 0;
 }
 
+.rate-icon img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
 .bg-tether {
     background: #FF453A;
     color: white;
@@ -222,7 +229,7 @@ body {
 }
 
 .rate-price {
-    font-size: 6px;
+    font-size: 12px;
     font-weight: 500;
     color: white;
     text-align: right;
