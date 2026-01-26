@@ -27,6 +27,7 @@ body {
     min-height: 100vh;
     padding: 16px;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 
 .app-container {
@@ -139,7 +140,7 @@ body {
 
 .rates-header {
     display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr;
+    grid-template-columns: 1fr 1.2fr 1.2fr;
     padding: 0 10px;
     color: var(--text-secondary);
     font-size: 12px;
@@ -153,7 +154,7 @@ body {
 
 .rate-row {
     display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr;
+    grid-template-columns: 1fr 1.2fr 1.2fr;
     align-items: center;
     padding: 14px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -207,10 +208,12 @@ body {
 }
 
 .rate-name {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 500;
     color: white;
     line-height: 1.2;
+    text-shadow: none;
+    -webkit-text-stroke: 0;
 }
 
 .rate-sub {
@@ -219,10 +222,12 @@ body {
 }
 
 .rate-price {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 6px;
+    font-weight: 500;
     color: white;
     text-align: right;
+    text-shadow: none;
+    -webkit-text-stroke: 0;
 }
 
 /* Buttons */
