@@ -1,11 +1,25 @@
 const tg = window.Telegram.WebApp;
 
 // State
+// State
 let prices = {
     USDT: 1.00,
     BTC: 0,
     ETH: 0,
-    USD_RUB: 98.5 // Fallback/Baseline
+    currentRate: 98.5,     // Current pair rate (e.g. USD to RUB)
+    currentCurrency: 'RUB', // Current active currency code
+    currentSymbol: '₽'      // Current active currency symbol
+};
+
+// Exchange Rates Mock (USD to X)
+const RATES = {
+    RUB: { rate: 98.5, symbol: '₽' },
+    AED: { rate: 3.67, symbol: 'Ar' },
+    GEL: { rate: 2.70, symbol: '₾' },
+    TRY: { rate: 34.20, symbol: '₺' },
+    AMD: { rate: 405.0, symbol: '֏' },
+    BRL: { rate: 5.75, symbol: 'R$' },
+    ARS: { rate: 980.0, symbol: '$' }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,7 +61,8 @@ function initUserProfile() {
 
 async function fetchPrices() {
     try {
-        const rubRate = prices.USD_RUB;
+        const rate = prices.currentRate;
+        const symbol = prices.currentSymbol;
 
         // Fetch BTC and ETH prices in USDT from Binance
         const [btcRes, ethRes] = await Promise.all([
@@ -64,26 +79,26 @@ async function fetchPrices() {
         // -- Update UI for 4 Rows, 2 Columns Each (Buy/Sell) --
 
         // Helper to format currency
-        const fmt = (val) => val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' ₽';
+        const fmt = (val) => val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' ' + symbol;
 
         // 1. Tether (USDT TRC20)
         // Buy = Base Rate, Sell = Base Rate * 0.98 (spread mock)
-        document.getElementById('usdt-trc-buy').textContent = fmt(rubRate);
-        document.getElementById('usdt-trc-sell').textContent = fmt(rubRate * 0.985);
+        document.getElementById('usdt-trc-buy').textContent = fmt(rate);
+        document.getElementById('usdt-trc-sell').textContent = fmt(rate * 0.985);
 
         // 2. Bitcoin (BTC)
-        const btcRub = prices.BTC * rubRate;
-        document.getElementById('btc-buy').textContent = fmt(btcRub);
-        document.getElementById('btc-sell').textContent = fmt(btcRub * 0.98);
+        const btcLocal = prices.BTC * rate;
+        document.getElementById('btc-buy').textContent = fmt(btcLocal);
+        document.getElementById('btc-sell').textContent = fmt(btcLocal * 0.98);
 
         // 3. Ethereum (ETH)
-        const ethRub = prices.ETH * rubRate;
-        document.getElementById('eth-buy').textContent = fmt(ethRub);
-        document.getElementById('eth-sell').textContent = fmt(ethRub * 0.98);
+        const ethLocal = prices.ETH * rate;
+        document.getElementById('eth-buy').textContent = fmt(ethLocal);
+        document.getElementById('eth-sell').textContent = fmt(ethLocal * 0.98);
 
-        // 4. Tether (USDT ERC20) - Same as TRC20 usually
-        document.getElementById('usdt-erc-buy').textContent = fmt(rubRate);
-        document.getElementById('usdt-erc-sell').textContent = fmt(rubRate * 0.985);
+        // 4. Tether (USDT ERC20)
+        document.getElementById('usdt-erc-buy').textContent = fmt(rate);
+        document.getElementById('usdt-erc-sell').textContent = fmt(rate * 0.985);
 
     } catch (e) {
         console.error("Failed to fetch prices:", e);
@@ -91,13 +106,25 @@ async function fetchPrices() {
 }
 
 function updateRates() {
-    // Mock logic: changing city might change the local cash rate
-    const city = currentCityId;
-    if (city === 'Dubai') {
-        prices.USD_RUB = 100.0; // Example: more expensive there
+    // Find the current city data
+    const city = cityData.find(c => c.id === currentCityId);
+
+    if (city && city.currency && RATES[city.currency]) {
+        const rateData = RATES[city.currency];
+        prices.currentRate = rateData.rate;
+        prices.currentCurrency = city.currency;
+        prices.currentSymbol = rateData.symbol;
     } else {
-        prices.USD_RUB = 98.5;
+        // Fallback to RUB
+        prices.currentRate = RATES.RUB.rate;
+        prices.currentCurrency = 'RUB';
+        prices.currentSymbol = RATES.RUB.symbol;
     }
+
+    // Update Modal Label
+    const modalLabel = document.getElementById('modal-currency-label');
+    if (modalLabel) modalLabel.textContent = prices.currentCurrency;
+
     fetchPrices(); // Re-render
 }
 
@@ -124,7 +151,7 @@ function calculateExchange() {
     const amountOut = document.getElementById('amount-out');
 
     if (!isNaN(amountIn)) {
-        amountOut.value = (amountIn * prices.USD_RUB).toFixed(2);
+        amountOut.value = (amountIn * prices.currentRate).toFixed(2);
     } else {
         amountOut.value = '';
     }
