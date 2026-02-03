@@ -100,8 +100,12 @@ body {
 .big-selector {
     width: 100%;
     background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    padding: 12px;
+    /* border removal */
+    border: none;
+    padding: 0 16px;
+    /* Horizontal padding only, vertical handled by height/flex */
+    height: 56px;
+    /* Fixed height for uniformity */
     /* Reduced from 16px */
     border-radius: var(--radius-lg);
     /* Increased radius for pill-like look */

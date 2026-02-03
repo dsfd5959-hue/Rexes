@@ -14,6 +14,7 @@ let prices = {
 // Exchange Rates Mock (USD to X)
 const RATES = {
     RUB: { buy: 78.2100, sell: 76.6600, symbol: '₽' },
+    USD: { buy: 1.005, sell: 0.995, symbol: '$' }, // Added USD
     AED: { buy: 3.67, sell: 3.61, symbol: 'Ar' },
     GEL: { buy: 2.70, sell: 2.65, symbol: '₾' },
     TRY: { buy: 34.20, sell: 33.50, symbol: '₺' },
@@ -358,15 +359,15 @@ function submitOrder() {
 // -- Location Modal Logic --
 
 const cityData = [
-    { name: "ОАЭ, г. Дубай", id: "Dubai", currency: "AED", flag: "ae" },
+    { name: "ОАЭ, г. Дубай", id: "Dubai", currency: "USD", flag: "us" },
     { name: "Россия, г. Санкт-Петербург", id: "Saint-Petersburg", currency: "RUB", flag: "ru" },
-    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "GEL", flag: "ge" },
-    { name: "Турция, г. Стамбул", id: "Istanbul", currency: "TRY", flag: "tr" },
-    { name: "Армения, г. Ереван", id: "Yerevan", currency: "AMD", flag: "am" },
+    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "USD", flag: "us" },
+    { name: "Турция, г. Стамбул", id: "Istanbul", currency: "USD", flag: "us" },
+    { name: "Армения, г. Ереван", id: "Yerevan", currency: "USD", flag: "us" },
     { name: "Россия, г. Москва", id: "Moscow", default: true, currency: "RUB", flag: "ru" },
     { name: "Россия, г. Краснодар", id: "Krasnodar", currency: "RUB", flag: "ru" },
-    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "BRL", flag: "br" },
-    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires", currency: "ARS", flag: "ar" },
+    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "USD", flag: "us" },
+    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires", currency: "USD", flag: "us" },
     { name: "Россия, г. Новосибирск", id: "Novosibirsk", currency: "RUB", flag: "ru" }
 ];
 
