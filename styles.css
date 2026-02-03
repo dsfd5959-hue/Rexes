@@ -104,7 +104,7 @@ body {
     border: none;
     padding: 0 16px;
     /* Horizontal padding only, vertical handled by height/flex */
-    height: 56px;
+    height: 48px;
     /* Fixed height for uniformity */
     /* Reduced from 16px */
     border-radius: var(--radius-lg);
