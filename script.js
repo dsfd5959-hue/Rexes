@@ -359,7 +359,17 @@ function submitOrder() {
 // -- Location Modal Logic --
 
 const cityData = [
-    { name: "ОАЭ, г. Дубай", id: "Dubai", currency: "USD", flag: "us" },
+    // Dubai with multiple currencies
+    {
+        name: "ОАЭ, г. Дубай",
+        id: "Dubai",
+        currency: "USD", // Default
+        flag: "us",
+        currencies: [
+            { code: 'AED', flag: 'ae' },
+            { code: 'USD', flag: 'us' }
+        ]
+    },
     { name: "Россия, г. Санкт-Петербург", id: "Saint-Petersburg", currency: "RUB", flag: "ru" },
     { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "USD", flag: "us" },
     { name: "Турция, г. Стамбул", id: "Istanbul", currency: "USD", flag: "us" },
@@ -421,7 +431,7 @@ function selectCity(city) {
 
     let cityName = city.name;
 
-    // Simplify city names for the button label
+    // Simplified city name logic
     if (cityName.includes("Россия, г.")) cityName = cityName.replace("Россия, г. ", "");
     else if (cityName.includes("ОАЭ, г.")) cityName = cityName.replace("ОАЭ, г. ", "");
     else if (cityName.includes("Турция, г.")) cityName = cityName.replace("Турция, г. ", "");
@@ -433,9 +443,47 @@ function selectCity(city) {
     document.getElementById('current-city-label').innerHTML = `<i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> ${cityName}`;
 
     // Update Currency Selector
-    if (city.currency && city.flag) {
-        document.getElementById('currency-flag').src = `https://flagcdn.com/w80/${city.flag}.png`;
-        document.getElementById('currency-code').textContent = city.currency;
+    const currencyContainer = document.getElementById('currency-selector');
+
+    // Check if city has multiple currencies
+    if (city.currencies && city.currencies.length > 0) {
+        // Create Toggle Interface
+        // Remove 'big-selector' class if it interferes, or reuse container
+        // We'll replace the content entirely
+
+        let toggleHtml = `<div class="currency-toggle">`;
+        city.currencies.forEach(curr => {
+            const isActive = (curr.code === city.currency); // Check default or current state
+            toggleHtml += `
+                <div class="toggle-option ${isActive ? 'active' : ''}" onclick="event.stopPropagation(); setCityCurrency('${city.id}', '${curr.code}')">
+                    <img src="https://flagcdn.com/w80/${curr.flag}.png" class="toggle-flag" alt="${curr.code}">
+                    ${curr.code}
+                </div>
+            `;
+        });
+        toggleHtml += `</div>`;
+
+        // Remove padding if using toggle to fit nicely? 
+        // Or keep container and replace innerHTML
+        currencyContainer.innerHTML = toggleHtml;
+        currencyContainer.classList.remove('big-selector'); // Remove styling collision if necessary, or keep
+        // Actually .big-selector has padding which might affect toggle.
+        // Let's reset padding for this case in JS or CSS.
+        currencyContainer.style.padding = '0';
+        currencyContainer.style.border = 'none'; // Already removed but just in case
+        currencyContainer.style.background = 'transparent'; // Let toggle handle bg
+
+    } else {
+        // Standard Single Currency
+        // Restore styling
+        currencyContainer.classList.add('big-selector');
+        currencyContainer.style.padding = '';
+        currencyContainer.style.background = '';
+
+        currencyContainer.innerHTML = `
+            <img src="https://flagcdn.com/w80/${city.flag}.png" id="currency-flag" class="currency-flag" alt="Flag">
+            <span id="currency-code">${city.currency}</span>
+        `;
     }
 
     // Close Modal
@@ -443,6 +491,21 @@ function selectCity(city) {
 
     // Update Rates logic
     updateRates();
+}
+
+// New function to handle toggle switch
+function setCityCurrency(cityId, currencyCode) {
+    // Update the cityData state
+    const city = cityData.find(c => c.id === cityId);
+    if (city) {
+        city.currency = currencyCode; // Update current selection
+        // Find flag for this currency
+        const currObj = city.currencies.find(c => c.code === currencyCode);
+        if (currObj) city.flag = currObj.flag;
+
+        // Re-render the toggle to show active state
+        selectCity(city);
+    }
 }
 
 // Override updateRates to use currentCityId
