@@ -346,7 +346,7 @@ function openSupport() {
 }
 
 function openAml() {
-    // tg.showAlert("Проверка AML скоро будет доступна!");
+    tg.openLink('https://rexes.world/chain/index');
 }
 
 function submitOrder() {
