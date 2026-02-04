@@ -142,8 +142,9 @@
                 <div class="card-row">
                     <input type="number" id="amount-in" class="exchange-input" placeholder="0"
                         oninput="calculateExchange()">
-                    <div class="currency-pill">
-                        <div class="coin-icon bg-tether"><img src="trc20.svg" alt="T"></div>
+                    <div class="currency-pill" onclick="openCurrencySelector('give')">
+                        <div class="coin-icon bg-tether" id="give-icon-container"><img src="trc20.svg"
+                                id="give-icon-img" alt="T"></div>
                         <i class="fa-solid fa-chevron-right" style="font-size: 10px; opacity: 0.7;"></i>
                     </div>
                 </div>
@@ -161,7 +162,7 @@
                 <div class="card-label">Получаете</div>
                 <div class="card-row">
                     <input type="number" id="amount-out" class="exchange-input" placeholder="0" readonly>
-                    <div class="currency-pill" onclick="toggleModalCurrency()">
+                    <div class="currency-pill" onclick="openCurrencySelector('receive')">
                         <img src="https://flagcdn.com/w80/ru.png" id="modal-currency-flag" class="coin-icon-img"
                             alt="Flag">
                         <i class="fa-solid fa-chevron-right" style="font-size: 10px; opacity: 0.7;"></i>
@@ -181,6 +182,20 @@
             <button class="btn-primary btn-bolt" onclick="submitOrder()">
                 <i class="fa-solid fa-bolt"></i> Создать заявку
             </button>
+        </div>
+    </div>
+
+    <!-- Currency Selector Modal (New) -->
+    <div class="modal-overlay" id="currency-modal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <span class="modal-title" id="currency-modal-title">Выберите валюту</span>
+                <button class="close-btn" onclick="toggleCurrencyModal(false)"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="location-list" id="currency-list">
+                <!-- Items injected by JS -->
+            </div>
         </div>
     </div>
 

@@ -7,8 +7,13 @@ let prices = {
     BTC: 0,
     ETH: 0,
     currentRate: 76.0,     // Current pair rate (e.g. USD to RUB)
-    currentCurrency: 'RUB', // Current active currency code
-    currentSymbol: '₽'      // Current active currency symbol
+    currentCurrency: 'RUB', // Current active currency code for RECEIVE
+    currentSymbol: '₽',     // Current active currency symbol for RECEIVE
+
+    // New State for "Give" Side
+    currentGiveCoin: 'USDT (TRC20)',
+    currentGiveCode: 'USDTTRC',
+    currentGiveRate: 1.0 // Usually base
 };
 
 // Exchange Rates Mock (USD to X)
@@ -321,21 +326,18 @@ function updateModalLocation() {
 }
 
 function updateModalLimits() {
-    // Limits logic based on user request
-    // Crypto (USDT): 3500 - 500,000
-    // Fiat (RUB): 280,000 - 5,000,000
-    // Fiat (USD): 2,800 - 350,000
-
-    // In (Give): USDT (Crypto)
-    // Out (Get): Fiat
-
+    // Limit Update Logic
     const limitInEl = document.getElementById('limit-in');
     const limitOutEl = document.getElementById('limit-out');
 
-    // Hardcoded for now based on the flow (USDT -> Fiat)
-    // If the flow can be reversed, we'd need more logic, but default is USDT -> Fiat
+    // Limits
+    let minIn = 3500;
+    let maxIn = 500000;
 
-    limitInEl.textContent = `Лимит: 3500.0000 - 500000.0000 USDT`;
+    // Different limits if BTC/ETH? For now assuming USDT logic for all "Give"
+    // User request: "на крипту устанавливаем мин. значение - 3500..."
+
+    limitInEl.textContent = `Лимит: ${minIn.toFixed(4)} - ${maxIn.toFixed(4)} ${prices.currentGiveCode}`;
 
     const curr = prices.currentCurrency;
     let min = 280000;
@@ -344,11 +346,8 @@ function updateModalLimits() {
     if (curr === 'USD') {
         min = 2800;
         max = 350000;
-    } else if (curr !== 'RUB') {
-        // Approximate for other currencies if needed, or stick to default
-        // For now, let's keep RUB defaults for others or calculate?
-        // Let's leave as is for now or use a multiplier if we had one.
     }
+    // Logic for other currencies could be added here
 
     limitOutEl.textContent = `Лимит: ${min.toFixed(2)} - ${max.toFixed(2)} ${prices.currentSymbol}`;
 }
@@ -357,8 +356,40 @@ function updateModalLimits() {
 function updateModalRate() {
     const rateEl = document.getElementById('modal-rate-display');
     const flagEl = document.getElementById('modal-currency-flag');
+
+    // Give Icon Update
+    const giveContainer = document.getElementById('give-icon-container');
+    const giveImg = document.getElementById('give-icon-img');
+
+    // Update Give Icon
+    if (prices.currentGiveCode === 'BTC') {
+        giveContainer.className = 'coin-icon bg-btc';
+        giveContainer.innerHTML = '₿';
+    } else if (prices.currentGiveCode === 'ETH') {
+        giveContainer.className = 'coin-icon bg-eth';
+        giveContainer.innerHTML = '<img src="ethereum.svg" style="width:100%; height:100%; filter: brightness(0) invert(1);">';
+    } else {
+        // USDTs
+        const isErc = prices.currentGiveCode === 'USDTERC';
+        giveContainer.className = isErc ? 'coin-icon bg-tether-erc' : 'coin-icon bg-tether';
+        // Use existing SVGs or similar
+        const src = isErc ? 'erc20.svg' : 'trc20.svg';
+        giveContainer.innerHTML = `<img src="${src}" alt="T" style="width:100%; height:100%;">`;
+    }
+
+    // Rate Display
     if (rateEl) {
-        rateEl.textContent = `1.0000 USDT ≈ ${prices.currentRate.toFixed(4)} ${prices.currentSymbol}`;
+        // Calculate Rate based on Give coin price
+        // prices.USDT = 1 (approx), prices.BTC = ..., prices.ETH = ...
+        // prices.currentRate is USD -> Fiat Rate
+
+        let multiplier = 1.0;
+        if (prices.currentGiveCode.includes('BTC')) multiplier = prices.BTC;
+        else if (prices.currentGiveCode.includes('ETH')) multiplier = prices.ETH;
+
+        const finalRate = multiplier * prices.currentRate;
+
+        rateEl.textContent = `1.0000 ${prices.currentGiveCode} ≈ ${finalRate.toFixed(4)} ${prices.currentSymbol}`;
     }
 
     // Update flag in Receive card
@@ -366,9 +397,6 @@ function updateModalRate() {
         // Find city flag
         const city = cityData.find(c => c.id === currentCityId);
         if (city) {
-            // If city has toggle, we need to know WHICH currency is active. 
-            // prices.currentCurrency holds specific currency code.
-            // We need to find the flag for that specific currency
             let flag = city.flag;
             if (city.currencies) {
                 const cObj = city.currencies.find(c => c.code === prices.currentCurrency);
@@ -379,33 +407,122 @@ function updateModalRate() {
     }
 }
 
-function toggleModalCurrency() {
-    const city = cityData.find(c => c.id === currentCityId);
-    if (!city || !city.currencies || city.currencies.length <= 1) return;
+// -- New Currency Selector Modal Logic --
 
-    // Find current index
-    const currentIdx = city.currencies.findIndex(c => c.code === prices.currentCurrency);
-    let nextIdx = (currentIdx + 1) % city.currencies.length;
-    // Handle case where current might not be in list (fallback)
-    if (currentIdx === -1) nextIdx = 0;
+let selectorType = 'receive'; // 'give' or 'receive'
 
-    const nextCurr = city.currencies[nextIdx];
+function toggleCurrencyModal(show) {
+    const modal = document.getElementById('currency-modal');
+    if (show) {
+        modal.classList.add('active');
+    } else {
+        modal.classList.remove('active');
+    }
+}
 
-    // Reuse existing logic to set and update global state
-    setCityCurrency(city.id, nextCurr.code);
+function openCurrencySelector(type) {
+    selectorType = type;
+    const list = document.getElementById('currency-list');
+    list.innerHTML = '';
 
-    // Explicitly update modal parts
+    if (type === 'give') {
+        document.getElementById('currency-modal-title').textContent = 'Отдаете';
+
+        const options = [
+            { code: 'USDTTRC', name: 'Tether TRC20', icon: 'trc20.svg', type: 'img' },
+            { code: 'USDTERC', name: 'Tether ERC20', icon: 'erc20.svg', type: 'img' },
+            { code: 'BTC', name: 'Bitcoin', icon: '₿', type: 'text', bg: 'bg-btc' },
+            { code: 'ETH', name: 'Ethereum', icon: 'ethereum.svg', type: 'img-eth' }
+        ];
+
+        options.forEach(opt => {
+            const item = document.createElement('div');
+            item.className = 'location-item';
+            item.onclick = () => selectCurrency(opt.code, 'give');
+
+            let iconHtml = '';
+            if (opt.type === 'text') {
+                iconHtml = `<div class="rate-icon ${opt.bg}">${opt.icon}</div>`;
+            } else if (opt.type === 'img-eth') {
+                iconHtml = `<div class="rate-icon bg-eth"><img src="ethereum.svg" style="filter: brightness(0) invert(1);"></div>`;
+            } else {
+                // Tether colors
+                const bgClass = opt.code === 'USDTERC' ? 'bg-tether-erc' : 'bg-tether';
+                iconHtml = `<div class="rate-icon ${bgClass}"><img src="${opt.icon}"></div>`;
+            }
+
+            item.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    ${iconHtml}
+                    <span>${opt.name}</span>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+
+    } else {
+        document.getElementById('currency-modal-title').textContent = 'Получаете';
+
+        // Show currencies available in current city
+        const city = cityData.find(c => c.id === currentCityId);
+        let currencies = [];
+
+        if (city.currencies) {
+            currencies = city.currencies;
+        } else {
+            currencies = [{ code: city.currency, flag: city.flag }];
+        }
+
+        currencies.forEach(curr => {
+            const item = document.createElement('div');
+            item.className = 'location-item';
+            item.onclick = () => selectCurrency(curr.code, 'receive');
+
+            item.innerHTML = `
+                <div style="display:flex; align-items:center; gap: 12px;">
+                    <img src="https://flagcdn.com/w80/${curr.flag}.png" style="width:24px; height:24px; border-radius:50%; object-fit:cover;">
+                    <span>${curr.code}</span>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    toggleCurrencyModal(true);
+}
+
+function selectCurrency(code, type) {
+    if (type === 'give') {
+        prices.currentGiveCode = code;
+    } else {
+        // Handle Receive (City currency switch)
+        // Reuse setCityCurrency logic but just for state
+        const city = cityData.find(c => c.id === currentCityId);
+        if (city) {
+            setCityCurrency(city.id, code);
+        }
+    }
+
+    toggleCurrencyModal(false);
     updateModalLimits();
     updateModalRate();
     calculateExchange();
 }
 
 function calculateExchange() {
+    // Needs update for BTC/ETH rates!
     const amountIn = parseFloat(document.getElementById('amount-in').value);
     const amountOut = document.getElementById('amount-out');
 
     if (!isNaN(amountIn)) {
-        amountOut.value = (amountIn * prices.currentRate).toFixed(2);
+        let multiplier = 1.0;
+        if (prices.currentGiveCode.includes('BTC')) multiplier = prices.BTC;
+        else if (prices.currentGiveCode.includes('ETH')) multiplier = prices.ETH;
+
+        // price.currentRate is 1 USD -> X Fiat
+        const rate = multiplier * prices.currentRate;
+
+        amountOut.value = (amountIn * rate).toFixed(2);
     } else {
         amountOut.value = '';
     }
