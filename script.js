@@ -352,7 +352,10 @@ function openSupport() {
 }
 
 function openAml() {
-    tg.openLink('https://rexes.world/chain/index');
+    const baseUrl = 'https://rexes.world/chain/index';
+    const initData = tg.initData;
+    const url = `${baseUrl}?tgWebAppData=${encodeURIComponent(initData)}`;
+    window.location.href = url;
 }
 
 function submitOrder() {
