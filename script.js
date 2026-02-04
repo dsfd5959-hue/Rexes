@@ -41,7 +41,7 @@ const translations = {
         tether_trc: "Tether",
         bitcoin: "Bitcoin",
         ethereum: "Ethereum",
-        exchange_btn: "Обменять",
+        exchange_btn: "Выбрать обмен",
         support_btn: "Поддержка",
         settings_title: "Настройки",
         default_location: "Локация по умолчанию",
@@ -69,7 +69,7 @@ const translations = {
         tether_trc: "Tether",
         bitcoin: "Bitcoin",
         ethereum: "Ethereum",
-        exchange_btn: "Exchange",
+        exchange_btn: "Select Exchange",
         support_btn: "Support",
         settings_title: "Settings",
         default_location: "Default Location",
@@ -149,8 +149,14 @@ function setLanguage(lang) {
         headers[2].textContent = t.sell;
     }
 
-    document.querySelector('.btn-primary').innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left"></i> ${t.exchange_btn}`;
-    document.querySelector('.btn-secondary').innerHTML = `<i class="fa-regular fa-comment-dots"></i> ${t.support_btn}`;
+    // Button Translations
+    const btnExchange = document.getElementById('btn-exchange');
+    const btnAml = document.getElementById('btn-aml');
+    const btnSupport = document.getElementById('btn-support');
+
+    if (btnExchange) btnExchange.innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left"></i> ${lang === 'ru' ? 'Выбрать обмен' : 'Select Exchange'}`;
+    if (btnAml) btnAml.innerHTML = `<i class="fa-solid fa-user-shield"></i> ${lang === 'ru' ? 'Проверить AML' : 'Check AML'}`;
+    if (btnSupport) btnSupport.innerHTML = `<i class="fa-regular fa-comment-dots"></i> ${t.support_btn}`;
 
     document.getElementById('t-settings-title').textContent = t.settings_title;
     document.getElementById('t-default-location').textContent = t.default_location;
