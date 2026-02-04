@@ -14,7 +14,7 @@ let prices = {
     // New State for "Give" Side (Crypto)
     currentGiveCoin: 'USDT (TRC20)',
     currentGiveCode: 'USDTTRC',
-    
+
     // Swap State
     isFiatToCrypto: false // false = Crypto -> Fiat (Default), true = Fiat -> Crypto
 };
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set default initial location to trigger currency setup
     const defaultCity = cityData.find(c => c.id === currentCityId);
-    if(defaultCity) selectCity(defaultCity, true);
+    if (defaultCity) selectCity(defaultCity, true);
 
     // Refresh prices every 30 seconds
     setInterval(fetchPrices, 30000);
@@ -162,7 +162,7 @@ function setLanguage(lang) {
 
     document.querySelector('#exchange-modal .modal-title').textContent = t.modal_exchange_title;
     document.querySelectorAll('#exchange-modal .modal-label')[0].textContent = t.modal_give;
-    
+
     // Dynamic Label for Receive
     updateModalRate(); // Rely on this to update dynamic labels
 
@@ -259,7 +259,7 @@ function updateRates() {
         if (rateData.buy !== undefined && rateData.sell !== undefined) {
             prices.currentBuy = rateData.buy;
             prices.currentSell = rateData.sell;
-            prices.currentRate = rateData.buy; 
+            prices.currentRate = rateData.buy;
         } else {
             prices.currentBuy = rateData.rate;
             prices.currentSell = rateData.rate * 0.985;
@@ -290,7 +290,7 @@ function toggleModal(show) {
 
         // Reset Swap State to Default (Crypto -> Fiat) when opening fresh?
         // Or keep state? Let's keep state but ensure UI is synced.
-        
+
         updateModalLocation();
         updateModalLimits();
         updateModalRate();
@@ -335,7 +335,7 @@ function updateModalLimits() {
 
         // Override Fiat Limits if specifically defined
         if (prices.currentCurrency === 'USD') {
-             // Example fixed limits for USD
+            // Example fixed limits for USD
         }
 
     } else {
@@ -344,8 +344,8 @@ function updateModalLimits() {
         // This is tricky, usually limits are defined in Crypto.
         // Let's assume we allow buying 50 USDT minimum.
         const rate = prices.currentBuy; // Buying Crypto cost
-        minIn = 50 * rate; 
-        maxIn = 50000 * rate; 
+        minIn = 50 * rate;
+        maxIn = 50000 * rate;
         symbolIn = prices.currentSymbol;
 
         // Get: Crypto
@@ -361,29 +361,75 @@ function updateModalLimits() {
 
 function toggleSwap() {
     prices.isFiatToCrypto = !prices.isFiatToCrypto;
-    
-    // Clear inputs
+
+    // Clear inputs to prevent confusion
     document.getElementById('amount-in').value = '';
     document.getElementById('amount-out').value = '';
 
+    // Force full UI update
     updateModalRate();
     updateModalLimits();
+}
+
+
+function updateModalLimits() {
+    const limitInEl = document.getElementById('limit-in');
+    const limitOutEl = document.getElementById('limit-out');
+
+    let minIn, maxIn;
+    let symbolIn, symbolOut;
+
+    if (!prices.isFiatToCrypto) {
+        // Mode: Crypto -> Fiat
+        // Input: Crypto (USDT etc.)
+        minIn = 3500;
+        maxIn = 500000;
+        symbolIn = prices.currentGiveCode;
+
+        // Output: Fiat
+        // We can just hide the output limit or show the equivalent
+        limitOutEl.style.display = 'block';
+        limitOutEl.textContent = `Лимит: ${(minIn * prices.currentSell).toFixed(0)} - ${(maxIn * prices.currentSell).toFixed(0)} ${prices.currentSymbol}`;
+
+        limitInEl.textContent = `Лимит: ${minIn.toFixed(4)} - ${maxIn.toFixed(4)} ${symbolIn}`;
+
+    } else {
+        // Mode: Fiat -> Crypto
+        // Input: Fiat
+        // Let's set reasonable Fiat limits
+        minIn = 5000; // e.g. 5000 RUB
+        maxIn = 5000000;
+        symbolIn = prices.currentSymbol;
+
+        // Output: Crypto
+        limitOutEl.style.display = 'block';
+        // Estimate approx crypto Output
+        const rate = prices.currentBuy; // Buying rate (High)
+        if (rate > 0) {
+            limitOutEl.textContent = `Лимит: ${(minIn / rate).toFixed(2)} - ${(maxIn / rate).toFixed(2)} ${prices.currentGiveCode}`;
+        }
+
+        limitInEl.textContent = `Лимит: ${minIn.toFixed(0)} - ${maxIn.toFixed(0)} ${symbolIn}`;
+    }
 }
 
 function updateModalRate() {
     const rateEl = document.getElementById('modal-rate-display');
     const giveContainer = document.getElementById('give-icon-container');
-    const receiveContainer = document.querySelector('#exchange-modal .exchange-card:nth-child(5) .currency-pill'); // Need better selector
-    // Actually we can just select by ID if we add IDs to Receive container elements, 
-    // but the receive container structure is:
-    // .exchange-card -> .card-row -> .currency-pill -> img#modal-currency-flag
-    
-    const receiveFlag = document.getElementById('modal-currency-flag');
-    const receivePill = receiveFlag.closest('.currency-pill');
-    
-    // 1. UPDATE GIVE SECTION
+    // Use the new ID for robustness
+    const receivePill = document.getElementById('receive-currency-pill');
+
+    // Safety check if element missing (during partial reload??)
+    if (!receivePill) return;
+
+    // --- 1. SETUP "GIVE" SECTION ---
+    const giveLabel = document.querySelectorAll('#exchange-modal .modal-label')[0];
+
     if (!prices.isFiatToCrypto) {
-        // Give = Crypto
+        // Mode: Give Crypto
+        giveLabel.textContent = `Отдаете (${prices.currentGiveCode})`; // e.g. "Отдаете (USDTTRC)"
+
+        // Icon Logic
         if (prices.currentGiveCode === 'BTC') {
             giveContainer.className = 'coin-icon bg-btc';
             giveContainer.innerHTML = '₿';
@@ -396,82 +442,89 @@ function updateModalRate() {
             const src = isErc ? 'erc20.svg' : 'trc20.svg';
             giveContainer.innerHTML = `<img src="${src}" alt="T" style="width:100%; height:100%;">`;
         }
-        document.querySelectorAll('#exchange-modal .modal-label')[0].textContent = 'Отдаете';
+        // Remove style override from Fiat mode
+        giveContainer.style.background = '';
+
     } else {
-        // Give = Fiat
-        // Find current city flag
+        // Mode: Give Fiat
         const city = cityData.find(c => c.id === currentCityId);
         let flag = city ? city.flag : 'ru';
-        // If city has currency overrides
+        // Currency Override
         if (city && city.currencies) {
-             const cObj = city.currencies.find(c => c.code === prices.currentCurrency);
-             if (cObj) flag = cObj.flag;
+            const cObj = city.currencies.find(c => c.code === prices.currentCurrency);
+            if (cObj) flag = cObj.flag;
         }
+
+        giveLabel.textContent = `Отдаете (${prices.currentCurrency})`;
 
         giveContainer.className = 'coin-icon';
-        giveContainer.style.background = 'transparent'; 
-        // We'll just put the image
+        giveContainer.style.background = 'transparent'; // No background for flag
         giveContainer.innerHTML = `<img src="https://flagcdn.com/w80/${flag}.png" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-        
-        document.querySelectorAll('#exchange-modal .modal-label')[0].textContent = 'Отдаете';
     }
 
-    // 2. UPDATE RECEIVE SECTION
-    // We need to change the content of the receive pill
+    // --- 2. SETUP "RECEIVE" SECTION ---
+    const receiveLabel = document.querySelectorAll('#exchange-modal .modal-label')[1];
+
     if (!prices.isFiatToCrypto) {
-        // Receive = Fiat (Default)
+        // Mode: Receive Fiat (Default)
+        receiveLabel.innerHTML = `Получаете (<span id="modal-currency-label">${prices.currentCurrency}</span>)`;
+
         const city = cityData.find(c => c.id === currentCityId);
         let flag = city ? city.flag : 'ru';
         if (city && city.currencies) {
-             const cObj = city.currencies.find(c => c.code === prices.currentCurrency);
-             if (cObj) flag = cObj.flag;
+            const cObj = city.currencies.find(c => c.code === prices.currentCurrency);
+            if (cObj) flag = cObj.flag;
         }
-        
+
         receivePill.innerHTML = `
             <img src="https://flagcdn.com/w80/${flag}.png" id="modal-currency-flag" class="coin-icon-img" alt="Flag">
             <i class="fa-solid fa-chevron-right" style="font-size: 10px; opacity: 0.7;"></i>
         `;
-        document.querySelectorAll('#exchange-modal .modal-label')[1].textContent = 'Получаете';
+
     } else {
-        // Receive = Crypto
-        // Show Crypto Icon
+        // Mode: Receive Crypto
+        receiveLabel.textContent = `Получаете (${prices.currentGiveCode})`;
+
         let iconHtml = '';
         let bgClass = '';
-        
+
         if (prices.currentGiveCode === 'BTC') {
-             bgClass = 'bg-btc';
-             iconHtml = '₿';
+            bgClass = 'bg-btc';
+            iconHtml = '₿';
         } else if (prices.currentGiveCode === 'ETH') {
-             bgClass = 'bg-eth';
-             iconHtml = '<img src="ethereum.svg" style="width:100%; height:100%; filter: brightness(0) invert(1);">';
+            bgClass = 'bg-eth';
+            iconHtml = '<img src="ethereum.svg" style="width:100%; height:100%; filter: brightness(0) invert(1);">';
         } else {
-             const isErc = prices.currentGiveCode === 'USDTERC';
-             bgClass = isErc ? 'bg-tether-erc' : 'bg-tether';
-             const src = isErc ? 'erc20.svg' : 'trc20.svg';
-             iconHtml = `<img src="${src}" style="width:100%; height:100%;">`;
+            const isErc = prices.currentGiveCode === 'USDTERC';
+            bgClass = isErc ? 'bg-tether-erc' : 'bg-tether';
+            const src = isErc ? 'erc20.svg' : 'trc20.svg';
+            iconHtml = `<img src="${src}" style="width:100%; height:100%;">`;
         }
 
         receivePill.innerHTML = `
             <div class="coin-icon ${bgClass}" style="width: 24px; height: 24px; margin-right: 0;">${iconHtml}</div>
             <i class="fa-solid fa-chevron-right" style="font-size: 10px; opacity: 0.7;"></i>
         `;
-        document.querySelectorAll('#exchange-modal .modal-label')[1].textContent = 'Получаете';
     }
 
-    // 3. RATE DISPLAY
+    // --- 3. RATE DISPLAY ---
     if (rateEl) {
         let multiplier = 1.0;
         if (prices.currentGiveCode.includes('BTC')) multiplier = prices.BTC;
         else if (prices.currentGiveCode.includes('ETH')) multiplier = prices.ETH;
 
-        // Rate Logic:
-        // Crypto -> Fiat: Rate is SELL Price (You give crypto, get fiat)
-        // Fiat -> Crypto: Rate is BUY Price (You give fiat, get crypto)
-        
-        const rateVal = prices.isFiatToCrypto ? prices.currentBuy : prices.currentSell;
-        const finalRate = multiplier * rateVal;
+        // Display Rate always as 1 Crypto = X Fiat for clarity?
+        // Or strictly strictly 1 InputUnit = X OutputUnits?
+        // Usually users prefer 1 BTC = ... USD.
+        // Let's stick to 1 Crypto = X Fiat but label it clearly?
+        // Or follow the swap: 1 Give = X Receive.
 
-        rateEl.textContent = `1.0000 ${prices.currentGiveCode} ≈ ${finalRate.toFixed(4)} ${prices.currentSymbol}`;
+        // If Give=Fiat (RUB), Rate: 1 RUB = 0.012 USDT. (Hard to read)
+        // Better: 1 USDT = 80 RUB (Buy Rate).
+
+        const cryptoRate = multiplier * (prices.isFiatToCrypto ? prices.currentBuy : prices.currentSell);
+
+        rateEl.textContent = `1 ${prices.currentGiveCode} ≈ ${cryptoRate.toFixed(2)} ${prices.currentSymbol}`;
     }
 }
 
@@ -486,10 +539,10 @@ function toggleCurrencyModal(show) {
     }
 }
 
-function openCurrencySelector(clickedSection) { 
+function openCurrencySelector(clickedSection) {
     // clickedSection: 'give' or 'receive'
     // Depending on isFiatToCrypto, we determine what list to show
-    
+
     let showCryptoList = false;
 
     if (!prices.isFiatToCrypto) {
@@ -504,7 +557,7 @@ function openCurrencySelector(clickedSection) {
 
     const list = document.getElementById('currency-list');
     list.innerHTML = '';
-    
+
     selectorType = clickedSection; // Track what we clicked
 
     if (showCryptoList) {
@@ -523,7 +576,7 @@ function openCurrencySelector(clickedSection) {
             // If we are in Default Mode: Give=Crypto. Selected -> updates prices.currentGiveCode
             // If we are in Swap Mode: Receive=Crypto. Selected -> updates prices.currentGiveCode (we store crypto type in one place for now or need separate?)
             // Let's assume prices.currentGiveCode ALWAYS tracks the selected Crypto Type, regardless of side.
-            item.onclick = () => selectCurrency(opt.code, 'crypto'); 
+            item.onclick = () => selectCurrency(opt.code, 'crypto');
 
             let iconHtml = '';
             if (opt.type === 'text') {
@@ -580,7 +633,7 @@ function selectCurrency(code, type) {
         // Fiat Type Selected
         // We only switch the *active* currency for this city
         const city = cityData.find(c => c.id === currentCityId);
-        if(city) {
+        if (city) {
             setCityCurrency(city.id, code);
         }
     }
@@ -611,7 +664,7 @@ function calculateExchange() {
             // Amount Out (Crypto) = Amount In (Fiat) / Rate
             const rate = multiplier * prices.currentBuy;
             if (rate > 0) {
-                 amountOut.value = (amountIn / rate).toFixed(6);
+                amountOut.value = (amountIn / rate).toFixed(6);
             } else {
                 amountOut.value = '0';
             }
@@ -628,7 +681,7 @@ function openSupport() {
 function submitOrder() {
     const amountIn = document.getElementById('amount-in').value;
     const amountOut = document.getElementById('amount-out').value;
-    
+
     if (!amountIn) {
         tg.showAlert("Введите сумму!");
         return;
@@ -740,7 +793,7 @@ function selectCity(city, initialLoad = false) {
             `;
         });
         toggleHtml += `</div>`;
-        
+
         currencyContainer.innerHTML = toggleHtml;
         currencyContainer.classList.remove('big-selector');
         currencyContainer.style.padding = '0';
@@ -757,8 +810,8 @@ function selectCity(city, initialLoad = false) {
         `;
     }
 
-    if(!initialLoad) toggleLocationModal(false);
-    
+    if (!initialLoad) toggleLocationModal(false);
+
     // Update Logic
     updateRates();
     updateModalLocation(); // Sync modal location text even if closed
