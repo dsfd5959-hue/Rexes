@@ -520,3 +520,168 @@ body {
     border-radius: 50%;
     object-fit: cover;
 }
+
+/* New Exchange Modal Styles */
+.modal-location-bar {
+    background: rgba(255, 255, 255, 0.08);
+    /* Slightly lighter than pure black */
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+}
+
+.exchange-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 16px;
+    position: relative;
+    /* To ensure proper stacking context */
+    z-index: 1;
+}
+
+.card-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.exchange-input {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 32px;
+    /* Large input */
+    font-weight: 500;
+    width: 60%;
+    outline: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Hide arrow controls on number input */
+.exchange-input::-webkit-outer-spin-button,
+.exchange-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.currency-pill {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 4px 8px 4px 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.currency-pill:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.coin-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.coin-icon-img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.limit-text {
+    font-size: 11px;
+    color: #555;
+    /* Dark grey */
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.swap-divider {
+    height: 20px;
+    display: flex;
+    justify-content: flex-end;
+    /* Align right to overlap? Or center? Screenshot shows it specific place */
+    margin-right: 20px;
+    position: relative;
+    z-index: 10;
+}
+
+.swap-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(60, 60, 80, 0.9);
+    /* Dark bg */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -16px;
+    /* Pull up to overlap */
+    border: 2px solid #0b0b26;
+    /* Match modal bg to fake gap */
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.rate-info-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Centered as per screenshot mostly? Or left? Screen says left. */
+    gap: 8px;
+    margin-top: 24px;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.rate-value {
+    color: white;
+    font-weight: 600;
+}
+
+.refresh-icon {
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.btn-bolt {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}

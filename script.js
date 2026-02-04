@@ -296,6 +296,12 @@ function toggleModal(show) {
         modal.classList.add('active');
         tg.BackButton.show();
         tg.BackButton.onClick(() => toggleModal(false));
+
+        // Update Modal UI
+        updateModalLocation();
+        updateModalLimits();
+        updateModalRate();
+
     } else {
         modal.classList.remove('active');
         // If location modal is not open, hide back button
@@ -305,6 +311,93 @@ function toggleModal(show) {
             tg.BackButton.offClick();
         }
     }
+}
+
+function updateModalLocation() {
+    const city = cityData.find(c => c.id === currentCityId);
+    if (city) {
+        document.getElementById('modal-location-text').textContent = city.name;
+    }
+}
+
+function updateModalLimits() {
+    // Limits logic based on user request
+    // Crypto (USDT): 3500 - 500,000
+    // Fiat (RUB): 280,000 - 5,000,000
+    // Fiat (USD): 2,800 - 350,000
+
+    // In (Give): USDT (Crypto)
+    // Out (Get): Fiat
+
+    const limitInEl = document.getElementById('limit-in');
+    const limitOutEl = document.getElementById('limit-out');
+
+    // Hardcoded for now based on the flow (USDT -> Fiat)
+    // If the flow can be reversed, we'd need more logic, but default is USDT -> Fiat
+
+    limitInEl.textContent = `Лимит: 3500.0000 - 500000.0000 USDT`;
+
+    const curr = prices.currentCurrency;
+    let min = 280000;
+    let max = 5000000;
+
+    if (curr === 'USD') {
+        min = 2800;
+        max = 350000;
+    } else if (curr !== 'RUB') {
+        // Approximate for other currencies if needed, or stick to default
+        // For now, let's keep RUB defaults for others or calculate?
+        // Let's leave as is for now or use a multiplier if we had one.
+    }
+
+    limitOutEl.textContent = `Лимит: ${min.toFixed(2)} - ${max.toFixed(2)} ${prices.currentSymbol}`;
+}
+
+
+function updateModalRate() {
+    const rateEl = document.getElementById('modal-rate-display');
+    const flagEl = document.getElementById('modal-currency-flag');
+    if (rateEl) {
+        rateEl.textContent = `1.0000 USDT ≈ ${prices.currentRate.toFixed(4)} ${prices.currentSymbol}`;
+    }
+
+    // Update flag in Receive card
+    if (flagEl) {
+        // Find city flag
+        const city = cityData.find(c => c.id === currentCityId);
+        if (city) {
+            // If city has toggle, we need to know WHICH currency is active. 
+            // prices.currentCurrency holds specific currency code.
+            // We need to find the flag for that specific currency
+            let flag = city.flag;
+            if (city.currencies) {
+                const cObj = city.currencies.find(c => c.code === prices.currentCurrency);
+                if (cObj) flag = cObj.flag;
+            }
+            flagEl.src = `https://flagcdn.com/w80/${flag}.png`;
+        }
+    }
+}
+
+function toggleModalCurrency() {
+    const city = cityData.find(c => c.id === currentCityId);
+    if (!city || !city.currencies || city.currencies.length <= 1) return;
+
+    // Find current index
+    const currentIdx = city.currencies.findIndex(c => c.code === prices.currentCurrency);
+    let nextIdx = (currentIdx + 1) % city.currencies.length;
+    // Handle case where current might not be in list (fallback)
+    if (currentIdx === -1) nextIdx = 0;
+
+    const nextCurr = city.currencies[nextIdx];
+
+    // Reuse existing logic to set and update global state
+    setCityCurrency(city.id, nextCurr.code);
+
+    // Explicitly update modal parts
+    updateModalLimits();
+    updateModalRate();
+    calculateExchange();
 }
 
 function calculateExchange() {
@@ -330,12 +423,10 @@ function openSupport() {
 function submitOrder() {
     const amountIn = document.getElementById('amount-in').value;
     const amountOut = document.getElementById('amount-out').value;
-    const fio = document.getElementById('fio').value;
-    const contact = document.getElementById('contact').value;
     const city = currentCityId; // Use global variable
 
-    if (!amountIn || !fio || !contact) {
-        tg.showAlert("Заполните все поля!");
+    if (!amountIn) {
+        tg.showAlert("Введите сумму!");
         return;
     }
 
@@ -345,10 +436,8 @@ function submitOrder() {
         amount_in: amountIn,
         currency_in: 'USDT',
         amount_out: amountOut,
-        currency_out: 'RUB',
+        currency_out: prices.currentCurrency,
         city: city,
-        fio: fio,
-        contact: contact,
         method: 'DASHBOARD_LIVE'
     };
 

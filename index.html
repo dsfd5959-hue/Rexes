@@ -12,11 +12,13 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Styles -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 
 <body>
     <div class="app-container fade-in">
+        <!-- ... (other content unchanged) ... -->
+        <script src="script.js?v=2"></script>
 
         <!-- Header -->
         <div class="header-profile">
@@ -127,33 +129,58 @@
 
     <!-- Exchange Modal -->
     <div class="modal-overlay" id="exchange-modal">
-        <div class="modal-sheet">
-            <div class="modal-header">
-                <span class="modal-title">Обмен</span>
-                <button class="close-btn" onclick="toggleModal(false)"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-sheet" style="padding: 20px 16px 30px;">
+            <!-- Location Bar (Clickable) -->
+            <div class="modal-location-bar" onclick="toggleLocationModal(true)">
+                <i class="fa-solid fa-location-dot"></i>
+                <span id="modal-location-text">Россия, г. Москва</span>
             </div>
 
-            <div class="modal-input-group">
-                <label class="modal-label">Отдаете (USDT)</label>
-                <input type="number" id="amount-in" class="modal-input" placeholder="0" oninput="calculateExchange()">
+            <!-- Exchange Card: Give -->
+            <div class="exchange-card">
+                <div class="card-label">Отдаете</div>
+                <div class="card-row">
+                    <input type="number" id="amount-in" class="exchange-input" placeholder="0"
+                        oninput="calculateExchange()">
+                    <div class="currency-pill">
+                        <div class="coin-icon bg-tether"><img src="trc20.svg" alt="T"></div>
+                        <i class="fa-solid fa-chevron-right" style="font-size: 10px; opacity: 0.7;"></i>
+                    </div>
+                </div>
+                <div class="limit-text" id="limit-in">Лимит: 3500.0000 - 500000.0000 USDTTRC</div>
             </div>
 
-            <div class="modal-input-group">
-                <label class="modal-label">Получаете (<span id="modal-currency-label">RUB</span>)</label>
-                <input type="number" id="amount-out" class="modal-input" placeholder="0" readonly>
+            <!-- Swap Indicator (Visual Only or Functional?) -->
+            <div class="swap-divider">
+                <div class="swap-icon"><i class="fa-solid fa-arrow-right-arrow-left"
+                        style="transform: rotate(90deg);"></i></div>
             </div>
 
-            <div class="modal-input-group">
-                <label class="modal-label">ФИО Получателя</label>
-                <input type="text" id="fio" class="modal-input" placeholder="Иванов Иван">
+            <!-- Exchange Card: Receive -->
+            <div class="exchange-card" style="margin-top: -12px;"> <!-- Negative margin to pull them together -->
+                <div class="card-label">Получаете</div>
+                <div class="card-row">
+                    <input type="number" id="amount-out" class="exchange-input" placeholder="0" readonly>
+                    <div class="currency-pill" onclick="toggleModalCurrency()">
+                        <img src="https://flagcdn.com/w80/ru.png" id="modal-currency-flag" class="coin-icon-img"
+                            alt="Flag">
+                        <i class="fa-solid fa-chevron-right" style="font-size: 10px; opacity: 0.7;"></i>
+                    </div>
+                </div>
+                <div class="limit-text" id="limit-out">Лимит: 280000.00 - 5000000.00 ₽</div>
             </div>
 
-            <div class="modal-input-group">
-                <label class="modal-label">Ваш контакт</label>
-                <input type="text" id="contact" class="modal-input" placeholder="@username">
+            <!-- Rate Bar -->
+            <div class="rate-info-bar">
+                <span class="rate-label">Курс:</span>
+                <span class="rate-value" id="modal-rate-display">1.0000 USDT = 77.4739 ₽</span>
+                <div class="refresh-icon"><i class="fa-solid fa-rotate"></i></div>
             </div>
 
-            <button class="btn-primary" onclick="submitOrder()">Подтвердить</button>
+            <!-- Action Button -->
+            <button class="btn-primary btn-bolt" onclick="submitOrder()">
+                <i class="fa-solid fa-bolt"></i> Создать заявку
+            </button>
         </div>
     </div>
 
