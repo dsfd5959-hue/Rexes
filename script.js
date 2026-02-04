@@ -186,10 +186,6 @@ function initUserProfile() {
         document.getElementById('user-name').textContent = `${user.first_name}`;
         document.getElementById('user-username').textContent = user.username ? '@' + user.username : '';
 
-        if (user.username) {
-            document.getElementById('contact').value = '@' + user.username;
-        }
-
         if (user.photo_url) {
             const avatarEl = document.getElementById('avatar');
             avatarEl.style.background = 'none';
@@ -203,6 +199,13 @@ function initUserProfile() {
             avatarEl.style.border = 'none';
             avatarEl.innerHTML = `<span style="font-size:20px; color:white;">${user.first_name[0]}</span>`;
         }
+    } else {
+        // Fallback for testing / when not in Telegram
+        document.getElementById('user-name').textContent = 'rexes';
+        document.getElementById('user-username').textContent = '@rexes_support';
+        const avatarEl = document.getElementById('avatar');
+        avatarEl.style.background = '#333'; // Default dark grey
+        avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
     }
 }
 
