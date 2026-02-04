@@ -31,9 +31,7 @@
                     <p id="user-username">@loading</p>
                 </div>
             </div>
-            <div class="settings-btn" onclick="openSettings()">
-                <i class="fa-solid fa-gear" style="color: #fff;"></i>
-            </div>
+            <!-- Settings button removed -->
         </div>
 
         <h2 class="rates-title">Курсы</h2>
@@ -117,11 +115,11 @@
         </div>
 
         <!-- Actions -->
-        <button class="btn-primary" onclick="toggleModal(true)">
+        <button class="btn-secondary" style="cursor: default;">
             <i class="fa-solid fa-arrow-right-arrow-left"></i> Обменять
         </button>
 
-        <button class="btn-secondary" onclick="openAml()">
+        <button class="btn-primary" onclick="openAml()">
             <i class="fa-solid fa-user-shield"></i> Проверка AML
         </button>
 
@@ -131,63 +129,7 @@
 
     </div>
 
-    <!-- Exchange Modal -->
-    <div class="modal-overlay" id="exchange-modal">
-        <div class="modal-sheet" style="padding: 20px 16px 30px;">
-            <!-- Location Bar (Clickable) -->
-            <div class="modal-location-bar" onclick="toggleLocationModal(true)">
-                <i class="fa-solid fa-location-dot"></i>
-                <span id="modal-location-text">Россия, г. Москва</span>
-            </div>
-
-            <!-- Exchange Card: Give -->
-            <div class="exchange-card">
-                <div class="card-label">Отдаете</div>
-                <div class="card-row">
-                    <input type="number" id="amount-in" class="exchange-input" placeholder="0"
-                        oninput="calculateExchange()">
-                    <div class="currency-pill" onclick="openCurrencySelector('give')">
-                        <div class="coin-icon bg-tether" id="give-icon-container"><img src="trc20.svg"
-                                id="give-icon-img" alt="T"></div>
-                        <i class="fa-solid fa-chevron-right" style="font-size: 10px; opacity: 0.7;"></i>
-                    </div>
-                </div>
-                <div class="limit-text" id="limit-in">Лимит: 3500.0000 - 500000.0000 USDTTRC</div>
-            </div>
-
-            <!-- Swap Indicator -->
-            <div class="swap-divider">
-                <div class="swap-icon" onclick="toggleSwap()"><i class="fa-solid fa-arrow-right-arrow-left"
-                        style="transform: rotate(90deg);"></i></div>
-            </div>
-
-            <!-- Exchange Card: Receive -->
-            <div class="exchange-card">
-                <div class="card-label">Получаете</div>
-                <div class="card-row">
-                    <input type="number" id="amount-out" class="exchange-input" placeholder="0" readonly>
-                    <div class="currency-pill" id="receive-currency-pill" onclick="openCurrencySelector('receive')">
-                        <img src="https://flagcdn.com/w80/ru.png" id="modal-currency-flag" class="coin-icon-img"
-                            alt="Flag">
-                        <i class="fa-solid fa-chevron-right" style="font-size: 10px; opacity: 0.7;"></i>
-                    </div>
-                </div>
-                <div class="limit-text" id="limit-out">Лимит: 280000.00 - 5000000.00 ₽</div>
-            </div>
-
-            <!-- Rate Bar -->
-            <div class="rate-info-bar">
-                <span class="rate-label">Курс:</span>
-                <span class="rate-value" id="modal-rate-display">1.0000 USDT = 77.4739 ₽</span>
-                <div class="refresh-icon"><i class="fa-solid fa-rotate"></i></div>
-            </div>
-
-            <!-- Action Button -->
-            <button class="btn-primary btn-bolt" onclick="submitOrder()">
-                <i class="fa-solid fa-bolt"></i> Создать заявку
-            </button>
-        </div>
-    </div>
+    <!-- Exchange Modal Removed -->
 
     <!-- Currency Selector Modal (New) -->
     <div class="modal-overlay" id="currency-modal">
