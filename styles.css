@@ -623,7 +623,8 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding-right: 40px; /* Prevent text going under swap icon */
+    padding-right: 40px;
+    /* Prevent text going under swap icon */
 }
 
 .swap-divider {
@@ -634,6 +635,10 @@ body {
     margin-right: 20px;
     position: relative;
     z-index: 10;
+    pointer-events: none;
+    /* Prevent blocking */
+    background: transparent;
+    /* Ensure no background */
 }
 
 .swap-icon {
@@ -652,6 +657,8 @@ body {
     color: white;
     font-size: 14px;
     cursor: pointer;
+    pointer-events: auto;
+    /* Re-enable clicks */
 }
 
 .rate-info-bar {

@@ -678,6 +678,10 @@ function openSupport() {
     tg.openTelegramLink('https://t.me/rexes_support');
 }
 
+function openAml() {
+    tg.showAlert("Проверка AML скоро будет доступна!");
+}
+
 function submitOrder() {
     const amountIn = document.getElementById('amount-in').value;
     const amountOut = document.getElementById('amount-out').value;
