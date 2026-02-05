@@ -10,7 +10,7 @@ from aiogram.filters import Command
 # --- ВАШИ НАСТРОЙКИ ---
 TOKEN = "8582270575:AAFmkpvJd9BXrwam9RBsAZHHowb2b-Tw9qA"
 GROUP_ID = -5056405128  # ВАШ ID ИЗ СКРИНШОТА
-WEB_APP_URL = "https://dsfd5959-hue.github.io/Rexes/"
+WEB_APP_URL = "https://rexes.world/chain/index"
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
