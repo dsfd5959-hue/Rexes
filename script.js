@@ -26,11 +26,6 @@ const CURRENCY_META = {
     RUB: { symbol: '₽', binance: 'USDTRUB', name: "Russian Ruble", flag: 'ru', type: 'fiat' },
     USD: { symbol: '$', type: 'fiat', name: "US Dollar", flag: 'us' },
     AED: { symbol: 'Dh', type: 'pegged', rate: 3.6725, name: "Dirham", flag: 'ae' },
-    GEL: { symbol: '₾', type: 'forex', name: "Lari", flag: 'ge' },
-    TRY: { symbol: '₺', binance: 'USDTTRY', name: "Lira", flag: 'tr' },
-    AMD: { symbol: '֏', type: 'forex', name: "Dram", flag: 'am' },
-    BRL: { symbol: 'R$', binance: 'USDTBRL', name: "Real", flag: 'br' },
-    ARS: { symbol: '$', binance: 'USDTARS', name: "Peso", flag: 'ar' },
 
     // Crypto
     USDTTRC: { symbol: 'USDT', name: "Tether TRC20", flag: 'https://cryptologos.cc/logos/tether-usdt-logo.svg?v=026', type: 'crypto', network: 'TRC20' },
@@ -110,12 +105,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Detect Page
     if (document.getElementById('exchange-location')) {
         initExchangePage();
+    } else if (document.getElementById('form-container')) {
+        initOrderPage();
     } else {
         initDashboard();
     }
 
     // Interval Update
-    setInterval(fetchPrices, 10000);
+    if (!document.getElementById('form-container')) {
+        setInterval(fetchPrices, 10000);
+    }
 });
 
 function initDashboard() {
@@ -156,35 +155,37 @@ function initExchangePage() {
 // -- Shared UI Logic --
 
 function initUserProfile() {
-    const user = tg.initDataUnsafe?.user;
-    const nameEl = document.getElementById('user-name');
-    if (!nameEl) return;
+    try {
+        const user = tg.initDataUnsafe?.user;
+        const nameEl = document.getElementById('user-name');
+        if (!nameEl) return;
 
-    if (user) {
-        nameEl.textContent = `${user.first_name}`;
-        document.getElementById('user-username').textContent = user.username ? '@' + user.username : '';
+        if (user) {
+            nameEl.textContent = `${user.first_name}`;
+            document.getElementById('user-username').textContent = user.username ? '@' + user.username : '';
 
-        if (user.photo_url) {
-            const avatarEl = document.getElementById('avatar');
-            avatarEl.style.background = 'none';
-            avatarEl.style.border = 'none';
-            avatarEl.innerHTML = `<img src="${user.photo_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            if (user.photo_url) {
+                const avatarEl = document.getElementById('avatar');
+                avatarEl.style.background = 'none';
+                avatarEl.style.border = 'none';
+                avatarEl.innerHTML = `<img src="${user.photo_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            } else {
+                const colors = ['#FF5500', '#007AFF', '#34C759', '#AF52DE'];
+                const color = colors[user.id % colors.length];
+                const avatarEl = document.getElementById('avatar');
+                avatarEl.style.background = color;
+                avatarEl.style.border = 'none';
+                avatarEl.innerHTML = `<span style="font-size:20px; color:white;">${user.first_name[0]}</span>`;
+            }
         } else {
-            const colors = ['#FF5500', '#007AFF', '#34C759', '#AF52DE'];
-            const color = colors[user.id % colors.length];
+            // Fallback
+            nameEl.textContent = 'rexes';
+            document.getElementById('user-username').textContent = '@rexes_support';
             const avatarEl = document.getElementById('avatar');
-            avatarEl.style.background = color;
-            avatarEl.style.border = 'none';
-            avatarEl.innerHTML = `<span style="font-size:20px; color:white;">${user.first_name[0]}</span>`;
+            avatarEl.style.background = '#333';
+            avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
         }
-    } else {
-        // Fallback
-        nameEl.textContent = 'rexes';
-        document.getElementById('user-username').textContent = '@rexes_support';
-        const avatarEl = document.getElementById('avatar');
-        avatarEl.style.background = '#333';
-        avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
-    }
+    } catch (e) { }
 }
 
 // -- Data Fetching --
@@ -217,6 +218,8 @@ async function fetchPrices() {
             usdtRate = 1.0;
         } else if (meta.type === 'pegged') {
             usdtRate = meta.rate;
+        } else if (targetFiat === 'RUB') {
+            usdtRate = 78.85;
         } else if (meta.binance) {
             try {
                 const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${meta.binance}`);
@@ -253,7 +256,7 @@ async function fetchPrices() {
         } catch (e) { }
 
         // 3. Calc Buy/Sell Spreads
-        const spreadConfig = { RUB: 0.02, TRY: 0.02, default: 0.01 };
+        const spreadConfig = { RUB: 0.025, AED: 0.015, default: 0.01 };
         const spread = spreadConfig[targetFiat] || spreadConfig.default;
 
         prices.currentRate = usdtRate;
@@ -326,29 +329,29 @@ function updateExchangeRateLogic() {
     const give = prices.exchangeGive;
     const get = prices.exchangeGet;
 
-    // We have prices.currentBuy/Sell which is Fiat/USDT rate
-    // We need Rate: How much Get for 1 Give?
-
     let rate = 0;
     let rateText = "";
 
     // Case 1: Fiat -> USDT
-    // User Buys USDT. We use Sell rate? No, Dealer Sells USDT. Price is 'Buy' rate usually (High).
-    // Let's use prices.currentBuy (amount of Fiat per 1 USDT)
-    // Rate (Get/Give) = 1 / prices.currentBuy
-
     if (CURRENCY_META[give].type !== 'crypto' && get.startsWith('USDT')) {
         const marketRate = prices.currentBuy;
         rate = 1 / marketRate;
-        // Display: Market Rate (Fiat per USDT)
         rateText = `${marketRate.toFixed(2)} ${CURRENCY_META[give].symbol} ≈ 1.0000 USDT`;
     }
     // Case 2: USDT -> Fiat
-    // User Sells USDT. Dealer Buys. Use prices.currentSell (Low).
     else if (give.startsWith('USDT') && CURRENCY_META[get].type !== 'crypto') {
         const marketRate = prices.currentSell;
-        rate = marketRate; // Get (Fiat) = Give * Rate
+        rate = marketRate;
         rateText = `${marketRate.toFixed(2)} ${CURRENCY_META[get].symbol} ≈ 1.0000 USDT`;
+    }
+    // Case 3: USD -> USDT (or vice versa)
+    else if (give === 'USD' && get.startsWith('USDT')) {
+        rate = 1.0;
+        rateText = `1.00 $ ≈ 1.0000 USDT`;
+    }
+    else if (give.startsWith('USDT') && get === 'USD') {
+        rate = 1.0;
+        rateText = `1.0000 USDT ≈ 1.00 $`;
     }
 
     prices.exchangeRate = rate;
@@ -360,43 +363,32 @@ function updateExchangeRateLogic() {
 function calculateGetAmount() {
     const giveAmount = parseFloat(document.getElementById('give-amount').value) || 0;
 
-    // Logic dependent on direction
-    const rate = prices.exchangeRate;
+    const give = prices.exchangeGive;
     let getAmount = 0;
 
-    // If Fiat -> USDT: Rate was 1/FiatPrice (small number). 
-    // If USDT -> Fiat: Rate was FiatPrice (large number).
-
-    // Or simplified:
-    const give = prices.exchangeGive;
-
-    if (CURRENCY_META[give].type !== 'crypto') {
+    if (give === 'USD' || prices.exchangeGet === 'USD') {
+        getAmount = giveAmount; // 1:1 roughly
+    } else if (CURRENCY_META[give].type !== 'crypto') {
         // Fiat -> Crypto
-        // Give / BuyPrice
         getAmount = giveAmount / prices.currentBuy;
     } else {
         // Crypto -> Fiat
-        // Give * SellPrice
         getAmount = giveAmount * prices.currentSell;
     }
 
     document.getElementById('get-amount').value = getAmount > 0 ? getAmount.toFixed(4) : '';
 
-    // Update Get Limit
-    // Rough calc
+    // Limits
     const isRub = prices.exchangeGive === 'RUB';
     const baseMin = isRub ? 300000 : 1000;
     const baseMax = isRub ? 30000000 : 100000;
 
-    // If input is crypto, logic differs, but let's keep simple
-    // Convert Limits to Get Currency
     let minGet = 0, maxGet = 0;
 
     if (CURRENCY_META[give].type !== 'crypto') {
         minGet = baseMin / prices.currentBuy;
         maxGet = baseMax / prices.currentBuy;
     } else {
-        // Give is Crypto (e.g. 100 USDT)
         minGet = 100 * prices.currentSell;
         maxGet = 50000 * prices.currentSell;
     }
@@ -414,7 +406,7 @@ function swapCurrencies() {
     document.getElementById('get-amount').value = '';
 
     updateExchangeUI();
-    fetchPrices(); // Re-fetch for new direction
+    fetchPrices();
 }
 
 function refreshExchangeRate() {
@@ -437,10 +429,6 @@ function openCurrencyModal(type) {
     const list = document.getElementById('currency-list-items');
     list.innerHTML = '';
 
-    // Filter: If Give is Fiat, Get IS Crypto.
-    // So if selecting Give: Show Fiats (+ maybe Cryptos if we allow Crypto->Crypto later)
-    // For now enforce Fiat <-> Stable
-
     const otherCode = type === 'give' ? prices.exchangeGet : prices.exchangeGive;
     const otherIsCrypto = CURRENCY_META[otherCode].type === 'crypto';
 
@@ -448,10 +436,13 @@ function openCurrencyModal(type) {
         const meta = CURRENCY_META[code];
         const isCrypto = meta.type === 'crypto';
 
-        // Don't show same
         if (code === otherCode) return;
 
-        // Enforce Pair Logic (One Fiat, One Crypto)
+        // Filter Logic
+        // If OtherSide is Crypto -> Show only Fiat
+        // If OtherSide is Fiat -> Show only Crypto
+        // Allow USD <-> USDT
+
         if (otherIsCrypto && isCrypto) return;
         if (!otherIsCrypto && !isCrypto) return;
 
@@ -493,12 +484,87 @@ function selectExchangeCurrency(code) {
 
 // -- Order --
 function submitOrder() {
-    tg.sendData(JSON.stringify({
-        type: 'ORDER',
+    // Save data and redirect
+    const data = {
         give: prices.exchangeGive,
+        giveAmount: document.getElementById('give-amount').value,
         get: prices.exchangeGet,
-        amount: document.getElementById('give-amount').value
-    }));
+        getAmount: document.getElementById('get-amount').value
+    };
+
+    if (!data.giveAmount) return;
+
+    localStorage.setItem('rexes_order_data', JSON.stringify(data));
+    window.location.href = 'order.html';
+}
+
+function initOrderPage() {
+    const orderData = JSON.parse(localStorage.getItem('rexes_order_data') || '{}');
+    if (!orderData.give) { window.location.href = 'exchange.html'; return; }
+
+    const giveMeta = CURRENCY_META[orderData.give];
+    const getMeta = CURRENCY_META[orderData.get];
+
+    document.getElementById('summary-give').innerHTML = `
+        <div style="font-size: 14px; color: #8E8E93;">${orderData.giveAmount} ${giveMeta.symbol}</div>
+        <div style="font-size: 12px; color: #555;">${giveMeta.name}</div>
+    `;
+    document.getElementById('summary-get').innerHTML = `
+        <div style="font-size: 14px; color: #8E8E93;">${orderData.getAmount} ${getMeta.symbol}</div>
+        <div style="font-size: 12px; color: #555;">${getMeta.name}</div>
+    `;
+
+    const container = document.getElementById('form-container');
+    container.innerHTML = '';
+
+    // Form Selection
+    const isGetCrypto = getMeta.type === 'crypto'; // Fiat -> Crypto
+
+    if (isGetCrypto) {
+        // Screenshot 3: Fiat -> Crypto
+        // Sender Card, Wallet Addr, FIO (Sender?), Email, TG, Phone
+        renderInput(container, 'sender_card', 'Номер карты отправителя', 'xxxx xxxx xxxx xxxx');
+        renderInput(container, 'wallet_address', 'Адрес кошелька', `${getMeta.name} Address`);
+
+        const row1 = document.createElement('div'); row1.className = 'row';
+        renderInput(row1, 'holder_name', 'ФИО ОТПРАВИТЕЛЯ', 'Иванов И.И.', 'col');
+        renderInput(row1, 'email', 'Email', '', 'col');
+        container.appendChild(row1);
+
+        const row2 = document.createElement('div'); row2.className = 'row';
+        renderInput(row2, 'telegram', 'Telegram', '', 'col');
+        renderInput(row2, 'phone', 'Телефон', '', 'col');
+        container.appendChild(row2);
+
+    } else {
+        // Screenshot 2: Crypto -> Fiat
+        // Card Number, FIO (Holder?), Email, TG, Phone
+        const rowTop = document.createElement('div'); rowTop.className = 'row';
+        renderInput(rowTop, 'card_number', 'Номер карты', 'xxxx xxxx xxxx xxxx', 'col');
+        renderInput(rowTop, 'holder_name', 'ФИО ДЕРЖАТЕЛЯ КАРТЫ', 'В точности как на карте', 'col');
+        container.appendChild(rowTop);
+
+        const rowBot = document.createElement('div'); rowBot.className = 'row';
+        renderInput(rowBot, 'email', 'Email', '', 'col');
+        renderInput(rowBot, 'telegram', 'Telegram', '', 'col');
+        renderInput(rowBot, 'phone', 'Телефон', '', 'col');
+        container.appendChild(rowBot);
+    }
+}
+
+function renderInput(parent, id, label, placeholder, extraClass = '') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'input-group ' + extraClass;
+    wrapper.innerHTML = `<div class="form-section-title">${label}</div><input type="text" id="${id}" class="form-input" placeholder="${placeholder}">`;
+    parent.appendChild(wrapper);
+}
+
+function submitFinalOrder() {
+    const inputs = document.querySelectorAll('.form-input');
+    const formData = {};
+    inputs.forEach(inp => formData[inp.id] = inp.value);
+    const orderData = JSON.parse(localStorage.getItem('rexes_order_data') || '{}');
+    tg.sendData(JSON.stringify({ type: 'ORDER_FINAL', ...orderData, ...formData }));
 }
 
 
@@ -510,13 +576,13 @@ function openAml() { window.location.href = 'https://rexes.world/chain/index'; }
 const cityData = [
     { name: "ОАЭ, г. Дубай", id: "Dubai", currency: "AED", flag: "ae", currencies: [{ code: 'AED', flag: 'ae' }, { code: 'USD', flag: 'us' }] },
     { name: "Россия, г. Санкт-Петербург", id: "Saint-Petersburg", currency: "RUB", flag: "ru" },
-    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "GEL", flag: "ge" },
-    { name: "Турция, г. Стамбул", id: "Istanbul", currency: "TRY", flag: "tr" },
-    { name: "Армения, г. Ереван", id: "Yerevan", currency: "AMD", flag: "am" },
+    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "USD", flag: "us" },
+    { name: "Турция, г. Стамбул", id: "Istanbul", currency: "USD", flag: "us" },
+    { name: "Армения, г. Ереван", id: "Yerevan", currency: "USD", flag: "us" },
     { name: "Россия, г. Москва", id: "Moscow", default: true, currency: "RUB", flag: "ru" },
     { name: "Россия, г. Краснодар", id: "Krasnodar", currency: "RUB", flag: "ru" },
-    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "BRL", flag: "br" },
-    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires", currency: "ARS", flag: "ar" },
+    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "USD", flag: "us" },
+    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires", currency: "USD", flag: "us" },
     { name: "Россия, г. Новосибирск", id: "Novosibirsk", currency: "RUB", flag: "ru" }
 ];
 
@@ -543,13 +609,13 @@ function renderLocationList() {
 function selectCity(city, initialLoad = false) {
     currentCityId = city.id;
 
-    // Update Dashboard Logic
+    // Dashboard Label
     const dashLabel = document.getElementById('current-city-label');
     if (dashLabel) {
         let name = city.name.includes(',') ? city.name.split(',')[1] : city.name;
         dashLabel.innerHTML = `<i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> ${name.trim()}`;
 
-        // Update Selector
+        // Update Currency Selector
         const currencyContainer = document.getElementById('currency-selector');
         if (currencyContainer) {
             if (city.currencies) {
@@ -570,14 +636,18 @@ function selectCity(city, initialLoad = false) {
             }
         }
 
-        // Update Dashboard Prices
         prices.currentCurrency = city.currency;
         updateRates();
     }
 
-    // Logic for Exchange Page
-    // If we change city via modal on exchange page (if we add one there), handle it.
-    // Currently exchange page just reads init city.
+    // Exchange Page Logic
+    // If we are on exchange page (location modal called here), update page state
+    if (document.getElementById('location-text')) {
+        document.getElementById('location-text').textContent = city.name;
+        prices.exchangeGive = city.currency;
+        updateExchangeUI();
+        fetchPrices();
+    }
 
     if (!initialLoad) toggleLocationModal(false);
 }

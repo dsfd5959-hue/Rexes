@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Order - Rexes</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css?v=3">
+    <style>
+        .order-container {
+            padding-top: 20px;
+        }
+
+        .summary-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #8E8E93;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-arrow {
+            color: #8E8E93;
+            font-size: 14px;
+        }
+
+        .form-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #e0e0e0;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: #FF5500;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        .main-action-btn {
+            width: 100%;
+            background: linear-gradient(90deg, #FF5500, #FF7700);
+            border: none;
+            border-radius: 16px;
+            padding: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 85, 0, 0.4);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container order-container">
+
+        <!-- Navbar -->
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <button onclick="window.location.href='exchange.html'"
+                style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 10px 10px 10px 0;">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <div style="flex: 1; text-align: center; font-weight: 700; font-size: 18px;">Оформление заявки</div>
+            <div style="width: 30px;"></div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-card">
+            <div class="summary-item">
+                <span class="summary-label">Вы отдаете</span>
+                <span class="summary-value" id="summary-give">...</span>
+            </div>
+            <div class="summary-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="summary-item">
+                <span class="summary-label">Вы получаете</span>
+                <span class="summary-value" id="summary-get">...</span>
+            </div>
+        </div>
+
+        <div id="form-container">
+            <!-- Injected via JS -->
+        </div>
+
+        <button class="main-action-btn" onclick="submitFinalOrder()">
+            Подтвердить
+        </button>
+    </div>
+
+    <script src="script.js?v=4"></script>
+</body>
+
+</html>
