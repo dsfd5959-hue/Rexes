@@ -5,9 +5,9 @@ let prices = {
     USDT: 1.00,
     BTC: 0,
     ETH: 0,
-    currentRate: 76.0,     // Base Rate (Buy Rate usually)
-    currentBuy: 78.21,     // Explicit Buy Rate
-    currentSell: 76.66,    // Explicit Sell Rate
+    currentRate: 1.0,     // Base Rate (USDT in Fiat)
+    currentBuy: 1.0,     // Buy Rate (Fiat -> USDT)
+    currentSell: 1.0,    // Sell Rate (USDT -> Fiat)
     currentCurrency: 'RUB', // Current active currency code for Fiat
     currentSymbol: '₽',     // Current active currency symbol for Fiat
 
@@ -19,16 +19,16 @@ let prices = {
     isFiatToCrypto: false // false = Crypto -> Fiat (Default), true = Fiat -> Crypto
 };
 
-// Exchange Rates Mock (USD to X)
-const RATES = {
-    RUB: { buy: 78.2100, sell: 76.6600, symbol: '₽' },
-    USD: { buy: 1.005, sell: 0.995, symbol: '$' },
-    AED: { buy: 3.67, sell: 3.61, symbol: 'Ar' },
-    GEL: { buy: 2.70, sell: 2.65, symbol: '₾' },
-    TRY: { buy: 34.20, sell: 33.50, symbol: '₺' },
-    AMD: { buy: 405.0, sell: 395.0, symbol: '֏' },
-    BRL: { buy: 5.75, sell: 5.60, symbol: 'R$' },
-    ARS: { buy: 980.0, sell: 960.0, symbol: '$' }
+// Currency Metadata (Symbols & Config)
+const CURRENCY_META = {
+    RUB: { symbol: '₽', binance: 'USDTRUB' },
+    USD: { symbol: '$', type: 'fiat' }, // special case
+    AED: { symbol: 'Dh', type: 'pegged', rate: 3.6725 },
+    GEL: { symbol: '₾', type: 'forex' },
+    TRY: { symbol: '₺', binance: 'USDTTRY' },
+    AMD: { symbol: '֏', type: 'forex' },
+    BRL: { symbol: 'R$', binance: 'USDTBRL' },
+    ARS: { symbol: '$', binance: 'USDTARS' } // Binance supports ARS too usually
 };
 
 // Translations
@@ -96,15 +96,13 @@ let currentLang = 'ru';
 document.addEventListener('DOMContentLoaded', () => {
     tg.expand();
     initUserProfile();
-    fetchPrices();
-    setLanguage('ru'); // Default to RU
-
-    // Set default initial location to trigger currency setup
+    
+    // Set default currency state from initial city
     const defaultCity = cityData.find(c => c.id === currentCityId);
-    if (defaultCity) selectCity(defaultCity, true);
+    if (defaultCity) selectCity(defaultCity, true); // This will trigger updateRates
 
-    // Refresh prices every 30 seconds
-    setInterval(fetchPrices, 30000);
+    // Refresh prices every 10 seconds for more "live" feel
+    setInterval(fetchPrices, 10000);
 });
 
 function openSettings() {
@@ -121,8 +119,7 @@ function toggleSettingsModal(show) {
         modal.classList.remove('active');
         const locModal = document.getElementById('location-modal');
         const exModal = document.getElementById('exchange-modal');
-        if ((!locModal || !locModal.classList.contains('active')) &&
-            (!exModal || !exModal.classList.contains('active'))) {
+        if ((!locModal || !locModal.classList.contains('active'))) {
             tg.BackButton.hide();
             tg.BackButton.offClick();
         }
@@ -166,15 +163,9 @@ function setLanguage(lang) {
     document.getElementById('t-faq').textContent = t.faq;
     document.getElementById('current-lang-code').textContent = lang.toUpperCase();
 
-    document.querySelector('#exchange-modal .modal-title').textContent = t.modal_exchange_title;
-    document.querySelectorAll('#exchange-modal .modal-label')[0].textContent = t.modal_give;
-
-    // Dynamic Label for Receive
-    updateModalRate(); // Rely on this to update dynamic labels
-
-    document.querySelectorAll('#exchange-modal .modal-label')[2].textContent = t.modal_fio;
-    document.querySelectorAll('#exchange-modal .modal-label')[3].textContent = t.modal_contact;
-    document.querySelector('#exchange-modal .btn-primary').textContent = t.modal_confirm;
+    // Modal translations if they exist in DOM (removed previously but keeping logic safe)
+    const exTitle = document.querySelector('#exchange-modal .modal-title');
+    if (exTitle) exTitle.textContent = t.modal_exchange_title;
 
     document.querySelector('#location-modal .modal-title').textContent = t.modal_location_title;
     document.querySelector('#location-modal .modal-desc').textContent = t.modal_location_desc;
@@ -215,77 +206,132 @@ function initUserProfile() {
     }
 }
 
+// --- Dynamic Price Fetching ---
+
 async function fetchPrices() {
     try {
-        const buyRate = prices.currentBuy;
-        const sellRate = prices.currentSell;
-        const symbol = prices.currentSymbol;
+        const currency = prices.currentCurrency;
+        const meta = CURRENCY_META[currency] || { symbol: currency };
+        let usdtRate = 0;
 
-        const [btcRes, ethRes] = await Promise.all([
-            fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'),
-            fetch('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT')
-        ]);
+        // 1. Fetch USDT Rate relative to Fiat
+        if (currency === 'USD') {
+            usdtRate = 1.0;
+        } else if (meta.type === 'pegged') {
+             usdtRate = meta.rate;
+        } else if (meta.binance) {
+            // Try Binance
+            try {
+                const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${meta.binance}`);
+                const data = await res.json();
+                if (data.price) usdtRate = parseFloat(data.price);
+            } catch (e) {
+                console.warn(`Binance fetch failed for ${meta.binance}, trying fallback...`);
+            }
+        }
 
-        const btcData = await btcRes.json();
-        const ethData = await ethRes.json();
+        // Fallback: If binance failed or not supported, try Forex API
+        if (!usdtRate && currency !== 'USD') {
+             try {
+                // Using a free open API for fallback
+                const res = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
+                const data = await res.json();
+                if (data.rates && data.rates[currency]) {
+                    usdtRate = data.rates[currency];
+                }
+            } catch (e) {
+                console.error("Forex fetch failed", e);
+            }
+        }
+        
+        // If still 0, use old fallback or stop
+        if (!usdtRate) return;
 
-        if (btcData.price) prices.BTC = parseFloat(btcData.price);
-        if (ethData.price) prices.ETH = parseFloat(ethData.price);
+        // 2. Fetch BTC & ETH prices (in USDT)
+        // We always fetch these from Binance
+        let btcPrice = prices.BTC;
+        let ethPrice = prices.ETH;
+        
+        try {
+             const [btcRes, ethRes] = await Promise.all([
+                fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'),
+                fetch('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT')
+            ]);
+            const btcData = await btcRes.json();
+            const ethData = await ethRes.json();
+            
+            if (btcData.price) prices.BTC = parseFloat(btcData.price);
+            if (ethData.price) prices.ETH = parseFloat(ethData.price);
+        } catch (e) {
+            console.error("Crypto prices fetch failed", e);
+        }
 
-        const fmt = (val) => val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' ' + symbol;
-
-        document.getElementById('usdt-trc-buy').textContent = fmt(buyRate);
-        document.getElementById('usdt-trc-sell').textContent = fmt(sellRate);
-
-        const btcBuy = prices.BTC * buyRate;
-        const btcSell = prices.BTC * sellRate;
-        document.getElementById('btc-buy').textContent = fmt(btcBuy);
-        document.getElementById('btc-sell').textContent = fmt(btcSell);
-
-        const ethBuy = prices.ETH * buyRate;
-        const ethSell = prices.ETH * sellRate;
-        document.getElementById('eth-buy').textContent = fmt(ethBuy);
-        document.getElementById('eth-sell').textContent = fmt(ethSell);
-
-        document.getElementById('usdt-erc-buy').textContent = fmt(buyRate);
-        document.getElementById('usdt-erc-sell').textContent = fmt(sellRate);
-
-        // Also update modal calculation if open
-        // calculateExchange(); // Removed
-        // updateModalRate();   // Removed
+        // 3. Calculate Buy/Sell with Spread
+        // Spread logic: Buyers pay slightly more, Sellers get slightly less
+        // e.g. Spread 1-2%
+        const spreadConfig = { 
+            RUB: 0.02, // 2% spread for unstable
+            TRY: 0.02, 
+            default: 0.01 
+        };
+        const spread = spreadConfig[currency] || spreadConfig.default;
+        
+        // Buy Price = Market Rate * (1 + spread/2)
+        // Sell Price = Market Rate * (1 - spread/2)
+        
+        prices.currentRate = usdtRate;
+        prices.currentBuy = usdtRate * (1 + spread/2);
+        prices.currentSell = usdtRate * (1 - spread/2);
+        
+        // 4. Update UI
+        updatePriceDOM();
 
     } catch (e) {
-        console.error("Failed to fetch prices:", e);
+        console.error("Global fetchPrices error:", e);
     }
+}
+
+function updatePriceDOM() {
+    const symbol = prices.currentSymbol;
+    const buyRate = prices.currentBuy;
+    const sellRate = prices.currentSell;
+
+    const fmt = (val) => val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' ' + symbol;
+
+    // USDT
+    document.getElementById('usdt-trc-buy').textContent = fmt(buyRate);
+    document.getElementById('usdt-trc-sell').textContent = fmt(sellRate);
+    
+    document.getElementById('usdt-erc-buy').textContent = fmt(buyRate);
+    document.getElementById('usdt-erc-sell').textContent = fmt(sellRate);
+
+    // BTC
+    const btcBuy = prices.BTC * buyRate;
+    const btcSell = prices.BTC * sellRate;
+    document.getElementById('btc-buy').textContent = fmt(btcBuy);
+    document.getElementById('btc-sell').textContent = fmt(btcSell);
+
+    // ETH
+    const ethBuy = prices.ETH * buyRate;
+    const ethSell = prices.ETH * sellRate;
+    document.getElementById('eth-buy').textContent = fmt(ethBuy);
+    document.getElementById('eth-sell').textContent = fmt(ethSell);
 }
 
 function updateRates() {
     const city = cityData.find(c => c.id === currentCityId);
-
-    if (city && city.currency && RATES[city.currency]) {
-        const rateData = RATES[city.currency];
-
-        if (rateData.buy !== undefined && rateData.sell !== undefined) {
-            prices.currentBuy = rateData.buy;
-            prices.currentSell = rateData.sell;
-            prices.currentRate = rateData.buy;
-        } else {
-            prices.currentBuy = rateData.rate;
-            prices.currentSell = rateData.rate * 0.985;
-            prices.currentRate = rateData.rate;
-        }
-
+    
+    if (city && city.currency) {
         prices.currentCurrency = city.currency;
-        prices.currentSymbol = rateData.symbol;
+        const meta = CURRENCY_META[city.currency];
+        prices.currentSymbol = meta ? meta.symbol : city.currency;
     } else {
-        // Fallback to RUB
-        prices.currentBuy = RATES.RUB.buy;
-        prices.currentSell = RATES.RUB.sell;
         prices.currentCurrency = 'RUB';
-        prices.currentSymbol = RATES.RUB.symbol;
-        prices.currentRate = RATES.RUB.buy;
+        prices.currentSymbol = '₽';
     }
 
+    // Trigger immediate fetch
+    document.getElementById('usdt-trc-buy').textContent = translations[currentLang].loading;
     fetchPrices();
 }
 
@@ -294,58 +340,11 @@ function updateRates() {
 function updateModalLocation() {
     const city = cityData.find(c => c.id === currentCityId);
     if (city) {
-        document.getElementById('modal-location-text').textContent = city.name;
+        // Just logic if modal exists
     }
 }
 
-function updateModalLimits() {
-    const limitInEl = document.getElementById('limit-in');
-    const limitOutEl = document.getElementById('limit-out');
-
-    let minIn, maxIn, minOut, maxOut;
-    let symbolIn, symbolOut;
-
-    if (!prices.isFiatToCrypto) {
-        // Crypto -> Fiat
-        // Give: Crypto
-        minIn = 3500; // USDT
-        maxIn = 500000;
-        symbolIn = prices.currentGiveCode;
-
-        // Get: Fiat
-        // Approx conversion for display limits
-        const rate = prices.currentSell; // Selling Crypto
-        minOut = minIn * rate; // Rough estimate
-        maxOut = maxIn * rate;
-        symbolOut = prices.currentSymbol;
-
-        // Override Fiat Limits if specifically defined
-        if (prices.currentCurrency === 'USD') {
-            // Example fixed limits for USD
-        }
-
-    } else {
-        // Fiat -> Crypto
-        // Give: Fiat
-        // This is tricky, usually limits are defined in Crypto.
-        // Let's assume we allow buying 50 USDT minimum.
-        const rate = prices.currentBuy; // Buying Crypto cost
-        minIn = 50 * rate;
-        maxIn = 50000 * rate;
-        symbolIn = prices.currentSymbol;
-
-        // Get: Crypto
-        minOut = 50;
-        maxOut = 50000;
-        symbolOut = prices.currentGiveCode;
-    }
-
-    limitInEl.textContent = `Лимит: ${minIn.toFixed(2)} - ${maxIn.toFixed(2)} ${symbolIn}`;
-    limitOutEl.textContent = ``; // Hide output limit or calculate it
-}
-
-
-// Exchange logic removed
+// ... helper functions ...
 
 function openSupport() {
     tg.openTelegramLink('https://t.me/rexes_support');
@@ -356,30 +355,6 @@ function openAml() {
     const initData = tg.initData;
     const url = `${baseUrl}?tgWebAppData=${encodeURIComponent(initData)}`;
     window.location.href = url;
-}
-
-function submitOrder() {
-    const amountIn = document.getElementById('amount-in').value;
-    const amountOut = document.getElementById('amount-out').value;
-
-    if (!amountIn) {
-        tg.showAlert("Введите сумму!");
-        return;
-    }
-
-    const data = {
-        type: 'ORDER',
-        coin: prices.currentGiveCode,
-        amount_in: amountIn,
-        currency_in: prices.isFiatToCrypto ? prices.currentCurrency : prices.currentGiveCode,
-        amount_out: amountOut,
-        currency_out: prices.isFiatToCrypto ? prices.currentGiveCode : prices.currentCurrency,
-        city: currentCityId,
-        direction: prices.isFiatToCrypto ? 'BUY' : 'SELL'
-    };
-
-    tg.sendData(JSON.stringify(data));
-    setTimeout(() => tg.close(), 50);
 }
 
 // -- Location Modal Logic --
@@ -396,13 +371,13 @@ const cityData = [
         ]
     },
     { name: "Россия, г. Санкт-Петербург", id: "Saint-Petersburg", currency: "RUB", flag: "ru" },
-    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "USD", flag: "us" },
-    { name: "Турция, г. Стамбул", id: "Istanbul", currency: "USD", flag: "us" },
-    { name: "Армения, г. Ереван", id: "Yerevan", currency: "USD", flag: "us" },
+    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "GEL", flag: "ge" }, // Fixed currency assumption
+    { name: "Турция, г. Стамбул", id: "Istanbul", currency: "TRY", flag: "tr" },
+    { name: "Армения, г. Ереван", id: "Yerevan", currency: "AMD", flag: "am" },
     { name: "Россия, г. Москва", id: "Moscow", default: true, currency: "RUB", flag: "ru" },
     { name: "Россия, г. Краснодар", id: "Krasnodar", currency: "RUB", flag: "ru" },
-    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "USD", flag: "us" },
-    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires", currency: "USD", flag: "us" },
+    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "BRL", flag: "br" }, 
+    { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires", currency: "ARS", flag: "ar" },
     { name: "Россия, г. Новосибирск", id: "Novosibirsk", currency: "RUB", flag: "ru" }
 ];
 
