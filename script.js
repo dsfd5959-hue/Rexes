@@ -15,20 +15,28 @@ let prices = {
     currentGiveCoin: 'USDT (TRC20)',
     currentGiveCode: 'USDTTRC',
 
-    // Swap State
-    isFiatToCrypto: false // false = Crypto -> Fiat (Default), true = Fiat -> Crypto
+    // Exchange Page State
+    exchangeGive: 'RUB',
+    exchangeGet: 'USDTTRC',
+    exchangeRate: 0
 };
 
 // Currency Metadata (Symbols & Config)
 const CURRENCY_META = {
-    RUB: { symbol: '₽', binance: 'USDTRUB' },
-    USD: { symbol: '$', type: 'fiat' }, // special case
-    AED: { symbol: 'Dh', type: 'pegged', rate: 3.6725 },
-    GEL: { symbol: '₾', type: 'forex' },
-    TRY: { symbol: '₺', binance: 'USDTTRY' },
-    AMD: { symbol: '֏', type: 'forex' },
-    BRL: { symbol: 'R$', binance: 'USDTBRL' },
-    ARS: { symbol: '$', binance: 'USDTARS' } // Binance supports ARS too usually
+    RUB: { symbol: '₽', binance: 'USDTRUB', name: "Russian Ruble", flag: 'ru', type: 'fiat' },
+    USD: { symbol: '$', type: 'fiat', name: "US Dollar", flag: 'us' },
+    AED: { symbol: 'Dh', type: 'pegged', rate: 3.6725, name: "Dirham", flag: 'ae' },
+    GEL: { symbol: '₾', type: 'forex', name: "Lari", flag: 'ge' },
+    TRY: { symbol: '₺', binance: 'USDTTRY', name: "Lira", flag: 'tr' },
+    AMD: { symbol: '֏', type: 'forex', name: "Dram", flag: 'am' },
+    BRL: { symbol: 'R$', binance: 'USDTBRL', name: "Real", flag: 'br' },
+    ARS: { symbol: '$', binance: 'USDTARS', name: "Peso", flag: 'ar' },
+
+    // Crypto
+    USDTTRC: { symbol: 'USDT', name: "Tether TRC20", flag: 'https://cryptologos.cc/logos/tether-usdt-logo.svg?v=026', type: 'crypto', network: 'TRC20' },
+    USDTERC: { symbol: 'USDT', name: "Tether ERC20", flag: 'https://cryptologos.cc/logos/tether-usdt-logo.svg?v=026', type: 'crypto', network: 'ERC20' },
+    BTC: { symbol: 'BTC', name: "Bitcoin", flag: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=026', type: 'crypto', binance: 'BTCUSDT' },
+    ETH: { symbol: 'ETH', name: "Ethereum", flag: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=026', type: 'crypto', binance: 'ETHUSDT' }
 };
 
 // Translations
@@ -93,94 +101,67 @@ const translations = {
 
 let currentLang = 'ru';
 
+// -- Initialization --
+
 document.addEventListener('DOMContentLoaded', () => {
     tg.expand();
     initUserProfile();
-    
-    // Set default currency state from initial city
-    const defaultCity = cityData.find(c => c.id === currentCityId);
-    if (defaultCity) selectCity(defaultCity, true); // This will trigger updateRates
 
-    // Refresh prices every 10 seconds for more "live" feel
+    // Detect Page
+    if (document.getElementById('exchange-location')) {
+        initExchangePage();
+    } else {
+        initDashboard();
+    }
+
+    // Interval Update
     setInterval(fetchPrices, 10000);
 });
 
-function openSettings() {
-    toggleSettingsModal(true);
-}
+function initDashboard() {
+    // Default City Logic
+    const defaultCity = cityData.find(c => c.id === currentCityId);
+    if (defaultCity) selectCity(defaultCity, true);
 
-function toggleSettingsModal(show) {
-    const modal = document.getElementById('settings-modal');
-    if (show) {
-        modal.classList.add('active');
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => toggleSettingsModal(false));
-    } else {
-        modal.classList.remove('active');
-        const locModal = document.getElementById('location-modal');
-        const exModal = document.getElementById('exchange-modal');
-        if ((!locModal || !locModal.classList.contains('active'))) {
-            tg.BackButton.hide();
-            tg.BackButton.offClick();
-        }
+    // Navigation Binding
+    const btn = document.getElementById('btn-exchange');
+    if (btn) {
+        btn.onclick = () => window.location.href = 'exchange.html';
+        btn.style.cursor = 'pointer';
     }
 }
 
-function toggleLanguage() {
-    const newLang = currentLang === 'ru' ? 'en' : 'ru';
-    setLanguage(newLang);
-}
-
-function setLanguage(lang) {
-    currentLang = lang;
-    const t = translations[lang];
-
-    // Main Page
-    document.querySelector('.rates-title').textContent = t.rates;
-    document.querySelector('.rates-subtitle').textContent = t.subtitle;
-
-    const headers = document.querySelectorAll('.rates-header span');
-    if (headers.length >= 3) {
-        headers[0].textContent = lang === 'ru' ? 'Валюта' : 'Currency';
-        headers[1].textContent = t.buy;
-        headers[2].textContent = t.sell;
+function initExchangePage() {
+    // Load City
+    const city = cityData.find(c => c.id === currentCityId);
+    if (city) {
+        document.getElementById('location-text').textContent = city.name;
+        // Default Give = City Currency
+        prices.exchangeGive = city.currency;
+        // Default Get = USDT
+        prices.exchangeGet = 'USDTTRC';
     }
 
-    // Button Translations
-    const btnExchange = document.getElementById('btn-exchange');
-    const btnAml = document.getElementById('btn-aml');
-    const btnSupport = document.getElementById('btn-support');
-
-    if (btnExchange) btnExchange.innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left"></i> ${lang === 'ru' ? 'Выбрать обмен' : 'Select Exchange'}`;
-    if (btnAml) btnAml.innerHTML = `<i class="fa-solid fa-user-shield"></i> ${lang === 'ru' ? 'Проверить AML' : 'Check AML'}`;
-    if (btnSupport) btnSupport.innerHTML = `<i class="fa-regular fa-comment-dots"></i> ${t.support_btn}`;
-
-    document.getElementById('t-settings-title').textContent = t.settings_title;
-    document.getElementById('t-default-location').textContent = t.default_location;
-    document.getElementById('t-orders').textContent = t.orders;
-    document.getElementById('t-language').textContent = t.language;
-    document.getElementById('t-support').textContent = t.support;
-    document.getElementById('t-faq').textContent = t.faq;
-    document.getElementById('current-lang-code').textContent = lang.toUpperCase();
-
-    // Modal translations if they exist in DOM (removed previously but keeping logic safe)
-    const exTitle = document.querySelector('#exchange-modal .modal-title');
-    if (exTitle) exTitle.textContent = t.modal_exchange_title;
-
-    document.querySelector('#location-modal .modal-title').textContent = t.modal_location_title;
-    document.querySelector('#location-modal .modal-desc').textContent = t.modal_location_desc;
-
-    const userName = document.getElementById('user-name');
-    if (userName.textContent === 'Загрузка...' || userName.textContent === 'Loading...') {
-        userName.textContent = t.loading;
+    // Bind Inputs
+    const giveInput = document.getElementById('give-amount');
+    if (giveInput) {
+        giveInput.addEventListener('input', calculateGetAmount);
     }
+
+    // Initial Fetch
+    updateExchangeUI();
+    fetchPrices();
 }
 
+// -- Shared UI Logic --
 
 function initUserProfile() {
     const user = tg.initDataUnsafe?.user;
+    const nameEl = document.getElementById('user-name');
+    if (!nameEl) return;
+
     if (user) {
-        document.getElementById('user-name').textContent = `${user.first_name}`;
+        nameEl.textContent = `${user.first_name}`;
         document.getElementById('user-username').textContent = user.username ? '@' + user.username : '';
 
         if (user.photo_url) {
@@ -197,186 +178,344 @@ function initUserProfile() {
             avatarEl.innerHTML = `<span style="font-size:20px; color:white;">${user.first_name[0]}</span>`;
         }
     } else {
-        // Fallback for testing / when not in Telegram
-        document.getElementById('user-name').textContent = 'rexes';
+        // Fallback
+        nameEl.textContent = 'rexes';
         document.getElementById('user-username').textContent = '@rexes_support';
         const avatarEl = document.getElementById('avatar');
-        avatarEl.style.background = '#333'; // Default dark grey
+        avatarEl.style.background = '#333';
         avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
     }
 }
 
-// --- Dynamic Price Fetching ---
+// -- Data Fetching --
 
 async function fetchPrices() {
     try {
-        const currency = prices.currentCurrency;
-        const meta = CURRENCY_META[currency] || { symbol: currency };
+        // We determine "Main" currency based on page
+        // Dashboard: currentCurrency (from City)
+        // Exchange: exchangeGive (if Fiat) or exchangeGet (if Fiat)
+
+        let targetFiat = prices.currentCurrency; // Default Dashboard
+
+        if (document.getElementById('exchange-location')) {
+            // Exchange Page Logic
+            const giveType = CURRENCY_META[prices.exchangeGive].type;
+            if (giveType !== 'crypto') targetFiat = prices.exchangeGive;
+            else {
+                const getType = CURRENCY_META[prices.exchangeGet].type;
+                if (getType !== 'crypto') targetFiat = prices.exchangeGet;
+            }
+        }
+
+        const meta = CURRENCY_META[targetFiat];
+        if (!meta) return;
+
         let usdtRate = 0;
 
-        // 1. Fetch USDT Rate relative to Fiat
-        if (currency === 'USD') {
+        // 1. Get USDT Rate
+        if (targetFiat === 'USD') {
             usdtRate = 1.0;
         } else if (meta.type === 'pegged') {
-             usdtRate = meta.rate;
+            usdtRate = meta.rate;
         } else if (meta.binance) {
-            // Try Binance
             try {
                 const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${meta.binance}`);
                 const data = await res.json();
                 if (data.price) usdtRate = parseFloat(data.price);
-            } catch (e) {
-                console.warn(`Binance fetch failed for ${meta.binance}, trying fallback...`);
-            }
+            } catch (e) { }
         }
 
-        // Fallback: If binance failed or not supported, try Forex API
-        if (!usdtRate && currency !== 'USD') {
-             try {
-                // Using a free open API for fallback
+        // Fallback
+        if (!usdtRate && targetFiat !== 'USD') {
+            try {
                 const res = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
                 const data = await res.json();
-                if (data.rates && data.rates[currency]) {
-                    usdtRate = data.rates[currency];
+                if (data.rates && data.rates[targetFiat]) {
+                    usdtRate = data.rates[targetFiat];
                 }
-            } catch (e) {
-                console.error("Forex fetch failed", e);
-            }
+            } catch (e) { }
         }
-        
-        // If still 0, use old fallback or stop
+
         if (!usdtRate) return;
 
-        // 2. Fetch BTC & ETH prices (in USDT)
-        // We always fetch these from Binance
+        // 2. Get Crypto Prices
         let btcPrice = prices.BTC;
         let ethPrice = prices.ETH;
-        
         try {
-             const [btcRes, ethRes] = await Promise.all([
+            const [btcRes, ethRes] = await Promise.all([
                 fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'),
                 fetch('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT')
             ]);
             const btcData = await btcRes.json();
             const ethData = await ethRes.json();
-            
             if (btcData.price) prices.BTC = parseFloat(btcData.price);
             if (ethData.price) prices.ETH = parseFloat(ethData.price);
-        } catch (e) {
-            console.error("Crypto prices fetch failed", e);
-        }
+        } catch (e) { }
 
-        // 3. Calculate Buy/Sell with Spread
-        // Spread logic: Buyers pay slightly more, Sellers get slightly less
-        // e.g. Spread 1-2%
-        const spreadConfig = { 
-            RUB: 0.02, // 2% spread for unstable
-            TRY: 0.02, 
-            default: 0.01 
-        };
-        const spread = spreadConfig[currency] || spreadConfig.default;
-        
-        // Buy Price = Market Rate * (1 + spread/2)
-        // Sell Price = Market Rate * (1 - spread/2)
-        
+        // 3. Calc Buy/Sell Spreads
+        const spreadConfig = { RUB: 0.02, TRY: 0.02, default: 0.01 };
+        const spread = spreadConfig[targetFiat] || spreadConfig.default;
+
         prices.currentRate = usdtRate;
-        prices.currentBuy = usdtRate * (1 + spread/2);
-        prices.currentSell = usdtRate * (1 - spread/2);
-        
+        prices.currentBuy = usdtRate * (1 + spread / 2);
+        prices.currentSell = usdtRate * (1 - spread / 2);
+
         // 4. Update UI
-        updatePriceDOM();
+        if (document.getElementById('usdt-trc-buy')) updateDashboardRates();
+        if (document.getElementById('exchange-rate-display')) updateExchangeRateLogic();
 
     } catch (e) {
-        console.error("Global fetchPrices error:", e);
+        console.error(e);
     }
 }
 
-function updatePriceDOM() {
-    const symbol = prices.currentSymbol;
-    const buyRate = prices.currentBuy;
-    const sellRate = prices.currentSell;
-
+function updateDashboardRates() {
+    const symbol = CURRENCY_META[prices.currentCurrency].symbol;
     const fmt = (val) => val.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' ' + symbol;
 
-    // USDT
-    document.getElementById('usdt-trc-buy').textContent = fmt(buyRate);
-    document.getElementById('usdt-trc-sell').textContent = fmt(sellRate);
-    
-    document.getElementById('usdt-erc-buy').textContent = fmt(buyRate);
-    document.getElementById('usdt-erc-sell').textContent = fmt(sellRate);
+    document.getElementById('usdt-trc-buy').textContent = fmt(prices.currentBuy);
+    document.getElementById('usdt-trc-sell').textContent = fmt(prices.currentSell);
+    document.getElementById('usdt-erc-buy').textContent = fmt(prices.currentBuy);
+    document.getElementById('usdt-erc-sell').textContent = fmt(prices.currentSell);
 
-    // BTC
-    const btcBuy = prices.BTC * buyRate;
-    const btcSell = prices.BTC * sellRate;
+    const btcBuy = prices.BTC * prices.currentBuy;
+    const btcSell = prices.BTC * prices.currentSell;
     document.getElementById('btc-buy').textContent = fmt(btcBuy);
     document.getElementById('btc-sell').textContent = fmt(btcSell);
 
-    // ETH
-    const ethBuy = prices.ETH * buyRate;
-    const ethSell = prices.ETH * sellRate;
+    const ethBuy = prices.ETH * prices.currentBuy;
+    const ethSell = prices.ETH * prices.currentSell;
     document.getElementById('eth-buy').textContent = fmt(ethBuy);
     document.getElementById('eth-sell').textContent = fmt(ethSell);
 }
 
-function updateRates() {
-    const city = cityData.find(c => c.id === currentCityId);
-    
-    if (city && city.currency) {
-        prices.currentCurrency = city.currency;
-        const meta = CURRENCY_META[city.currency];
-        prices.currentSymbol = meta ? meta.symbol : city.currency;
-    } else {
-        prices.currentCurrency = 'RUB';
-        prices.currentSymbol = '₽';
+// ------ Exchange Page Functions ------
+
+function updateExchangeUI() {
+    const give = prices.exchangeGive;
+    const get = prices.exchangeGet;
+
+    // Update Icons/Codes
+    const setPill = (idPrefix, code) => {
+        const meta = CURRENCY_META[code];
+        const img = meta.type === 'crypto' ? meta.flag : `https://flagcdn.com/w80/${meta.flag}.png`;
+        document.getElementById(idPrefix + '-flag').src = img;
+        document.getElementById(idPrefix + '-code').textContent = meta.symbol || code;
+    };
+
+    setPill('give', give);
+    setPill('get', get);
+
+    updateExchangeLimits();
+}
+
+function updateExchangeLimits() {
+    const giveCode = prices.exchangeGive;
+    const meta = CURRENCY_META[giveCode];
+
+    // Demo Limits
+    let min = 1000, max = 100000;
+    if (giveCode === 'RUB') { min = 300000; max = 30000000; }
+    else if (meta.type === 'crypto') { min = 100; max = 50000; }
+    else if (giveCode === 'AED') { min = 5000; max = 500000; }
+
+    document.getElementById('give-limit').textContent = `Лимит: ${min.toLocaleString()} - ${max.toLocaleString()} ${meta.symbol}`;
+}
+
+function updateExchangeRateLogic() {
+    const give = prices.exchangeGive;
+    const get = prices.exchangeGet;
+
+    // We have prices.currentBuy/Sell which is Fiat/USDT rate
+    // We need Rate: How much Get for 1 Give?
+
+    let rate = 0;
+    let rateText = "";
+
+    // Case 1: Fiat -> USDT
+    // User Buys USDT. We use Sell rate? No, Dealer Sells USDT. Price is 'Buy' rate usually (High).
+    // Let's use prices.currentBuy (amount of Fiat per 1 USDT)
+    // Rate (Get/Give) = 1 / prices.currentBuy
+
+    if (CURRENCY_META[give].type !== 'crypto' && get.startsWith('USDT')) {
+        const marketRate = prices.currentBuy;
+        rate = 1 / marketRate;
+        // Display: Market Rate (Fiat per USDT)
+        rateText = `${marketRate.toFixed(2)} ${CURRENCY_META[give].symbol} ≈ 1.0000 USDT`;
+    }
+    // Case 2: USDT -> Fiat
+    // User Sells USDT. Dealer Buys. Use prices.currentSell (Low).
+    else if (give.startsWith('USDT') && CURRENCY_META[get].type !== 'crypto') {
+        const marketRate = prices.currentSell;
+        rate = marketRate; // Get (Fiat) = Give * Rate
+        rateText = `${marketRate.toFixed(2)} ${CURRENCY_META[get].symbol} ≈ 1.0000 USDT`;
     }
 
-    // Trigger immediate fetch
-    document.getElementById('usdt-trc-buy').textContent = translations[currentLang].loading;
+    prices.exchangeRate = rate;
+    document.getElementById('exchange-rate-display').textContent = rateText;
+
+    calculateGetAmount();
+}
+
+function calculateGetAmount() {
+    const giveAmount = parseFloat(document.getElementById('give-amount').value) || 0;
+
+    // Logic dependent on direction
+    const rate = prices.exchangeRate;
+    let getAmount = 0;
+
+    // If Fiat -> USDT: Rate was 1/FiatPrice (small number). 
+    // If USDT -> Fiat: Rate was FiatPrice (large number).
+
+    // Or simplified:
+    const give = prices.exchangeGive;
+
+    if (CURRENCY_META[give].type !== 'crypto') {
+        // Fiat -> Crypto
+        // Give / BuyPrice
+        getAmount = giveAmount / prices.currentBuy;
+    } else {
+        // Crypto -> Fiat
+        // Give * SellPrice
+        getAmount = giveAmount * prices.currentSell;
+    }
+
+    document.getElementById('get-amount').value = getAmount > 0 ? getAmount.toFixed(4) : '';
+
+    // Update Get Limit
+    // Rough calc
+    const isRub = prices.exchangeGive === 'RUB';
+    const baseMin = isRub ? 300000 : 1000;
+    const baseMax = isRub ? 30000000 : 100000;
+
+    // If input is crypto, logic differs, but let's keep simple
+    // Convert Limits to Get Currency
+    let minGet = 0, maxGet = 0;
+
+    if (CURRENCY_META[give].type !== 'crypto') {
+        minGet = baseMin / prices.currentBuy;
+        maxGet = baseMax / prices.currentBuy;
+    } else {
+        // Give is Crypto (e.g. 100 USDT)
+        minGet = 100 * prices.currentSell;
+        maxGet = 50000 * prices.currentSell;
+    }
+
+    const getSymbol = CURRENCY_META[prices.exchangeGet].symbol;
+    document.getElementById('get-limit').textContent = `Лимит: ${minGet.toFixed(2)} - ${maxGet.toFixed(2)} ${getSymbol}`;
+}
+
+function swapCurrencies() {
+    const temp = prices.exchangeGive;
+    prices.exchangeGive = prices.exchangeGet;
+    prices.exchangeGet = temp;
+
+    document.getElementById('give-amount').value = '';
+    document.getElementById('get-amount').value = '';
+
+    updateExchangeUI();
+    fetchPrices(); // Re-fetch for new direction
+}
+
+function refreshExchangeRate() {
+    fetchPrices();
+    const btn = document.querySelector('.refresh-btn i');
+    if (btn) {
+        btn.style.transition = 'transform 0.5s';
+        btn.style.transform = 'rotate(360deg)';
+        setTimeout(() => btn.style.transform = 'rotate(0deg)', 500);
+    }
+}
+
+// -- Modal Logic (Exchange) --
+
+let activeSelector = null;
+
+function openCurrencyModal(type) {
+    activeSelector = type;
+    const modal = document.getElementById('currency-modal');
+    const list = document.getElementById('currency-list-items');
+    list.innerHTML = '';
+
+    // Filter: If Give is Fiat, Get IS Crypto.
+    // So if selecting Give: Show Fiats (+ maybe Cryptos if we allow Crypto->Crypto later)
+    // For now enforce Fiat <-> Stable
+
+    const otherCode = type === 'give' ? prices.exchangeGet : prices.exchangeGive;
+    const otherIsCrypto = CURRENCY_META[otherCode].type === 'crypto';
+
+    Object.keys(CURRENCY_META).forEach(code => {
+        const meta = CURRENCY_META[code];
+        const isCrypto = meta.type === 'crypto';
+
+        // Don't show same
+        if (code === otherCode) return;
+
+        // Enforce Pair Logic (One Fiat, One Crypto)
+        if (otherIsCrypto && isCrypto) return;
+        if (!otherIsCrypto && !isCrypto) return;
+
+        const item = document.createElement('div');
+        item.className = 'currency-list-item';
+        item.onclick = () => selectExchangeCurrency(code);
+
+        const img = isCrypto ? meta.flag : `https://flagcdn.com/w80/${meta.flag}.png`;
+
+        item.innerHTML = `
+            <div class="currency-item-left">
+                <img src="${img}" class="currency-icon-large">
+                <div>
+                     <div style="font-weight:600; color:white;">${code}</div>
+                     <div style="font-size:12px; color:#888;">${meta.name}</div>
+                </div>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+
+    modal.classList.add('active');
+}
+
+function toggleCurrencyModal(show) {
+    const modal = document.getElementById('currency-modal');
+    if (show) modal.classList.add('active');
+    else modal.classList.remove('active');
+}
+
+function selectExchangeCurrency(code) {
+    if (activeSelector === 'give') prices.exchangeGive = code;
+    else prices.exchangeGet = code;
+
+    toggleCurrencyModal(false);
+    updateExchangeUI();
     fetchPrices();
 }
 
-// Modal Logic - Exchange Modal Removed
-
-function updateModalLocation() {
-    const city = cityData.find(c => c.id === currentCityId);
-    if (city) {
-        // Just logic if modal exists
-    }
+// -- Order --
+function submitOrder() {
+    tg.sendData(JSON.stringify({
+        type: 'ORDER',
+        give: prices.exchangeGive,
+        get: prices.exchangeGet,
+        amount: document.getElementById('give-amount').value
+    }));
 }
 
-// ... helper functions ...
 
-function openSupport() {
-    tg.openTelegramLink('https://t.me/rexes_support');
-}
+// -- Shared Helper --
+function openSupport() { tg.openTelegramLink('https://t.me/rexes_support'); }
+function openAml() { window.location.href = 'https://rexes.world/chain/index'; }
 
-function openAml() {
-    const baseUrl = 'https://rexes.world/chain/index';
-    const initData = tg.initData;
-    const url = `${baseUrl}?tgWebAppData=${encodeURIComponent(initData)}`;
-    window.location.href = url;
-}
-
-// -- Location Modal Logic --
-
+// -- Location Modal --
 const cityData = [
-    {
-        name: "ОАЭ, г. Дубай",
-        id: "Dubai",
-        currency: "USD",
-        flag: "us",
-        currencies: [
-            { code: 'AED', flag: 'ae' },
-            { code: 'USD', flag: 'us' }
-        ]
-    },
+    { name: "ОАЭ, г. Дубай", id: "Dubai", currency: "AED", flag: "ae", currencies: [{ code: 'AED', flag: 'ae' }, { code: 'USD', flag: 'us' }] },
     { name: "Россия, г. Санкт-Петербург", id: "Saint-Petersburg", currency: "RUB", flag: "ru" },
-    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "GEL", flag: "ge" }, // Fixed currency assumption
+    { name: "Грузия, г. Тбилиси", id: "Tbilisi", currency: "GEL", flag: "ge" },
     { name: "Турция, г. Стамбул", id: "Istanbul", currency: "TRY", flag: "tr" },
     { name: "Армения, г. Ереван", id: "Yerevan", currency: "AMD", flag: "am" },
     { name: "Россия, г. Москва", id: "Moscow", default: true, currency: "RUB", flag: "ru" },
     { name: "Россия, г. Краснодар", id: "Krasnodar", currency: "RUB", flag: "ru" },
-    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "BRL", flag: "br" }, 
+    { name: "Бразилия, г. Сан-Паулу", id: "Sao-Paulo", currency: "BRL", flag: "br" },
     { name: "Аргентина, г. Буэнос-Айрес", id: "Buenos-Aires", currency: "ARS", flag: "ar" },
     { name: "Россия, г. Новосибирск", id: "Novosibirsk", currency: "RUB", flag: "ru" }
 ];
@@ -385,37 +524,18 @@ let currentCityId = "Moscow";
 
 function toggleLocationModal(show) {
     const modal = document.getElementById('location-modal');
-    if (show) {
-        renderLocationList();
-        modal.classList.add('active');
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => toggleLocationModal(false));
-    } else {
-        modal.classList.remove('active');
-        tg.BackButton.hide();
-        tg.BackButton.offClick();
-    }
+    if (show) { renderLocationList(); modal.classList.add('active'); }
+    else modal.classList.remove('active');
 }
 
 function renderLocationList() {
     const container = document.getElementById('location-list');
     container.innerHTML = '';
-
     cityData.forEach(city => {
         const item = document.createElement('div');
         item.className = `location-item ${city.id === currentCityId ? 'selected' : ''}`;
         item.onclick = () => selectCity(city);
-
-        let checkMark = '';
-        if (city.id === currentCityId) {
-            checkMark = `<div class="check-icon"><i class="fa-solid fa-check"></i></div>`;
-        }
-
-        item.innerHTML = `
-            <span>${city.name}</span>
-            ${checkMark}
-        `;
-
+        item.innerHTML = `<span>${city.name}</span>${city.id === currentCityId ? '<div class="check-icon"><i class="fa-solid fa-check"></i></div>' : ''}`;
         container.appendChild(item);
     });
 }
@@ -423,61 +543,62 @@ function renderLocationList() {
 function selectCity(city, initialLoad = false) {
     currentCityId = city.id;
 
-    let cityName = city.name;
-    if (cityName.includes("Россия, г.")) cityName = cityName.replace("Россия, г. ", "");
-    else if (cityName.includes("ОАЭ, г.")) cityName = cityName.replace("ОАЭ, г. ", "");
-    else if (cityName.includes("Турция, г.")) cityName = cityName.replace("Турция, г. ", "");
-    else if (cityName.includes("Грузия, г.")) cityName = cityName.replace("Грузия, г. ", "");
-    else if (cityName.includes("Армения, г.")) cityName = cityName.replace("Армения, г. ", "");
-    else if (cityName.includes("Бразилия, г.")) cityName = cityName.replace("Бразилия, г. ", "");
-    else if (cityName.includes("Аргентина, г.")) cityName = cityName.replace("Аргентина, г. ", "");
+    // Update Dashboard Logic
+    const dashLabel = document.getElementById('current-city-label');
+    if (dashLabel) {
+        let name = city.name.includes(',') ? city.name.split(',')[1] : city.name;
+        dashLabel.innerHTML = `<i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> ${name.trim()}`;
 
-    document.getElementById('current-city-label').innerHTML = `<i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> ${cityName}`;
+        // Update Selector
+        const currencyContainer = document.getElementById('currency-selector');
+        if (currencyContainer) {
+            if (city.currencies) {
+                // Render Toggle
+                let html = `<div class="currency-toggle">`;
+                city.currencies.forEach(c => {
+                    html += `<div class="toggle-option ${c.code === city.currency ? 'active' : ''}" onclick="event.stopPropagation(); setCityCurrency('${city.id}','${c.code}')">
+                        <img src="https://flagcdn.com/w80/${c.flag}.png" class="toggle-flag">${c.code}</div>`;
+                });
+                html += `</div>`;
+                currencyContainer.innerHTML = html;
+                currencyContainer.classList.remove('big-selector');
+                currencyContainer.style.background = 'transparent'; currencyContainer.style.padding = '0';
+            } else {
+                currencyContainer.innerHTML = `<img src="https://flagcdn.com/w80/${city.flag}.png" class="currency-flag"><span id="currency-code">${city.currency}</span>`;
+                currencyContainer.classList.add('big-selector');
+                currencyContainer.style.background = ''; currencyContainer.style.padding = 'auto';
+            }
+        }
 
-    const currencyContainer = document.getElementById('currency-selector');
-
-    if (city.currencies && city.currencies.length > 0) {
-        let toggleHtml = `<div class="currency-toggle">`;
-        city.currencies.forEach(curr => {
-            const isActive = (curr.code === city.currency);
-            toggleHtml += `
-                <div class="toggle-option ${isActive ? 'active' : ''}" onclick="event.stopPropagation(); setCityCurrency('${city.id}', '${curr.code}')">
-                    <img src="https://flagcdn.com/w80/${curr.flag}.png" class="toggle-flag" alt="${curr.code}">
-                    ${curr.code}
-                </div>
-            `;
-        });
-        toggleHtml += `</div>`;
-
-        currencyContainer.innerHTML = toggleHtml;
-        currencyContainer.classList.remove('big-selector');
-        currencyContainer.style.padding = '0';
-        currencyContainer.style.border = 'none';
-        currencyContainer.style.background = 'transparent';
-
-    } else {
-        currencyContainer.classList.add('big-selector');
-        currencyContainer.style.padding = '';
-        currencyContainer.style.background = '';
-        currencyContainer.innerHTML = `
-            <img src="https://flagcdn.com/w80/${city.flag}.png" id="currency-flag" class="currency-flag" alt="Flag">
-            <span id="currency-code">${city.currency}</span>
-        `;
+        // Update Dashboard Prices
+        prices.currentCurrency = city.currency;
+        updateRates();
     }
 
-    if (!initialLoad) toggleLocationModal(false);
+    // Logic for Exchange Page
+    // If we change city via modal on exchange page (if we add one there), handle it.
+    // Currently exchange page just reads init city.
 
-    // Update Logic
-    updateRates();
-    updateModalLocation(); // Sync modal location text even if closed
+    if (!initialLoad) toggleLocationModal(false);
 }
 
 function setCityCurrency(cityId, currencyCode) {
     const city = cityData.find(c => c.id === cityId);
     if (city) {
         city.currency = currencyCode;
-        const currObj = city.currencies.find(c => c.code === currencyCode);
-        if (currObj) city.flag = currObj.flag;
         selectCity(city);
     }
+}
+
+function updateRates() {
+    if (document.getElementById('usdt-trc-buy')) {
+        document.getElementById('usdt-trc-buy').textContent = translations[currentLang].loading;
+        fetchPrices();
+    }
+}
+
+function openSettings() { document.getElementById('settings-modal').classList.add('active'); tg.BackButton.show(); tg.BackButton.onClick(() => toggleSettingsModal(false)); }
+function toggleSettingsModal(show) {
+    if (show) document.getElementById('settings-modal').classList.add('active');
+    else { document.getElementById('settings-modal').classList.remove('active'); tg.BackButton.hide(); }
 }

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Exchange - Rexes</title>
+    <!-- Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css?v=3">
+    <style>
+        /* Specific overrides for exchange page if needed */
+        .exchange-container {
+            padding-top: 10px;
+        }
+
+        .modal-location-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            /* Added cursor pointer */
+        }
+
+        .swap-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 16px;
+            position: relative;
+        }
+
+        .input-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .amount-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 32px;
+            font-weight: 500;
+            width: 60%;
+            outline: none;
+        }
+
+        .currency-selector-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px 6px 6px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .currency-selector-pill:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .pill-flag {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .pill-code {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .limit-label {
+            font-size: 12px;
+            color: #8E8E93;
+        }
+
+        .swap-separator {
+            height: 16px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .swap-btn-circle {
+            width: 36px;
+            height: 36px;
+            background: #2c2c2e;
+            /* Darker grey backing */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 16px;
+            top: -18px;
+            /* Half height */
+            border: 3px solid var(--bg-color);
+            /* Match bg to create gap */
+            cursor: pointer;
+            color: white;
+        }
+
+        .rate-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 0 10px;
+        }
+
+        .rate-text {
+            color: #8E8E93;
+            font-size: 14px;
+        }
+
+        .rate-value-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .refresh-btn {
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .main-action-btn {
+            width: 100%;
+            background: linear-gradient(90deg, #FF5500, #FF7700);
+            border: none;
+            border-radius: 16px;
+            padding: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: auto;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 85, 0, 0.4);
+        }
+
+        /* Modal tweaks */
+        .currency-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .currency-list-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .currency-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .currency-icon-large {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container exchange-container">
+
+        <!-- Location Header -->
+        <div class="modal-location-bar" id="exchange-location" onclick="toggleLocationModal(true)">
+            <i class="fa-solid fa-location-dot" style="margin-right: 8px;"></i>
+            <span id="location-text">Loading...</span>
+        </div>
+
+        <!-- Give Section -->
+        <div class="card-label" style="margin-left: 10px;">Отдаете</div>
+        <div class="swap-card">
+            <div class="input-row">
+                <input type="number" class="amount-input" id="give-amount" placeholder="0" inputmode="decimal">
+                <div class="currency-selector-pill" onclick="openCurrencyModal('give')">
+                    <img src="" class="pill-flag" id="give-flag" alt="Flag">
+                    <span class="pill-code" id="give-code">...</span>
+                    <i class="fa-solid fa-chevron-right" style="font-size: 10px; color: #8E8E93;"></i>
+                </div>
+            </div>
+            <div class="limit-label" id="give-limit">Лимит: ...</div>
+        </div>
+
+        <!-- Swap Separator -->
+        <div class="swap-separator">
+            <div class="swap-btn-circle" onclick="swapCurrencies()">
+                <i class="fa-solid fa-arrow-right-arrow-left" style="transform: rotate(90deg);"></i>
+            </div>
+        </div>
+
+        <!-- Get Section -->
+        <div class="card-label" style="margin-left: 10px;">Получаете</div>
+        <div class="swap-card">
+            <div class="input-row">
+                <input type="number" class="amount-input" id="get-amount" placeholder="0" inputmode="decimal" readonly>
+                <div class="currency-selector-pill" onclick="openCurrencyModal('get')">
+                    <img src="" class="pill-flag" id="get-flag" alt="Flag">
+                    <span class="pill-code" id="get-code">...</span>
+                    <i class="fa-solid fa-chevron-right" style="font-size: 10px; color: #8E8E93;"></i>
+                </div>
+            </div>
+            <div class="limit-label" id="get-limit">Лимит: ...</div>
+        </div>
+
+        <!-- Rate Display -->
+        <div class="rate-display">
+            <span class="rate-text">Курс:</span>
+            <div class="rate-value-box">
+                <span id="exchange-rate-display">...</span>
+                <div class="refresh-btn" onclick="refreshExchangeRate()">
+                    <i class="fa-solid fa-rotate"></i>
+                </div>
+            </div>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <!-- Action Button -->
+        <button class="main-action-btn" onclick="submitOrder()">
+            <i class="fa-solid fa-bolt"></i> Создать заявку
+        </button>
+    </div>
+
+    <!-- Currency Selection Modal -->
+    <div class="modal-overlay" id="currency-modal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <span class="modal-title">Выберите валюту</span>
+                <button class="close-btn" onclick="toggleCurrencyModal(false)"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="location-list" id="currency-list-items">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Location Modal (Shared Logic) -->
+    <div class="modal-overlay" id="location-modal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <span class="modal-title">Локация</span>
+                <button class="close-btn" onclick="toggleLocationModal(false)"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="modal-desc">
+                Выберите офис, который будет выбран по умолчанию.
+            </p>
+            <div class="location-list" id="location-list">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=4"></script>
+</body>
+
+</html>
