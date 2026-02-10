@@ -312,187 +312,57 @@ function updateExchangeUI() {
     updateExchangeLimits();
 }
 
+function getLimits(code) {
+    const meta = CURRENCY_META[code];
+    let min = 1000, max = 100000;
+    if (code === 'RUB') { min = 300000; max = 30000000; }
+    else if (meta.type === 'crypto') { min = 100; max = 50000; }
+    else if (code === 'AED') { min = 5000; max = 500000; }
+    return { min, max };
+}
+
 function updateExchangeLimits() {
     const giveCode = prices.exchangeGive;
     const meta = CURRENCY_META[giveCode];
-
-    // Demo Limits
-    let min = 1000, max = 100000;
-    if (giveCode === 'RUB') { min = 300000; max = 30000000; }
-    else if (meta.type === 'crypto') { min = 100; max = 50000; }
-    else if (giveCode === 'AED') { min = 5000; max = 500000; }
+    const { min, max } = getLimits(giveCode);
 
     document.getElementById('give-limit').textContent = `Лимит: ${min.toLocaleString()} - ${max.toLocaleString()} ${meta.symbol}`;
 }
 
-function updateExchangeRateLogic() {
-    const give = prices.exchangeGive;
-    const get = prices.exchangeGet;
+// ... existing code ...
 
-    let rate = 0;
-    let rateText = "";
-
-    // Case 1: Fiat -> USDT
-    if (CURRENCY_META[give].type !== 'crypto' && get.startsWith('USDT')) {
-        const marketRate = prices.currentBuy;
-        rate = 1 / marketRate;
-        rateText = `${marketRate.toFixed(2)} ${CURRENCY_META[give].symbol} ≈ 1.0000 USDT`;
-    }
-    // Case 2: USDT -> Fiat
-    else if (give.startsWith('USDT') && CURRENCY_META[get].type !== 'crypto') {
-        const marketRate = prices.currentSell;
-        rate = marketRate;
-        rateText = `${marketRate.toFixed(2)} ${CURRENCY_META[get].symbol} ≈ 1.0000 USDT`;
-    }
-    // Case 3: USD -> USDT (or vice versa)
-    else if (give === 'USD' && get.startsWith('USDT')) {
-        rate = 1.0;
-        rateText = `1.00 $ ≈ 1.0000 USDT`;
-    }
-    else if (give.startsWith('USDT') && get === 'USD') {
-        rate = 1.0;
-        rateText = `1.0000 USDT ≈ 1.00 $`;
-    }
-
-    prices.exchangeRate = rate;
-    document.getElementById('exchange-rate-display').textContent = rateText;
-
-    calculateGetAmount();
-}
-
-function calculateGetAmount() {
-    const giveAmount = parseFloat(document.getElementById('give-amount').value) || 0;
-
-    const give = prices.exchangeGive;
-    let getAmount = 0;
-
-    if (give === 'USD' || prices.exchangeGet === 'USD') {
-        getAmount = giveAmount; // 1:1 roughly
-    } else if (CURRENCY_META[give].type !== 'crypto') {
-        // Fiat -> Crypto
-        getAmount = giveAmount / prices.currentBuy;
-    } else {
-        // Crypto -> Fiat
-        getAmount = giveAmount * prices.currentSell;
-    }
-
-    document.getElementById('get-amount').value = getAmount > 0 ? getAmount.toFixed(4) : '';
-
-    // Limits
-    const isRub = prices.exchangeGive === 'RUB';
-    const baseMin = isRub ? 300000 : 1000;
-    const baseMax = isRub ? 30000000 : 100000;
-
-    let minGet = 0, maxGet = 0;
-
-    if (CURRENCY_META[give].type !== 'crypto') {
-        minGet = baseMin / prices.currentBuy;
-        maxGet = baseMax / prices.currentBuy;
-    } else {
-        minGet = 100 * prices.currentSell;
-        maxGet = 50000 * prices.currentSell;
-    }
-
-    const getSymbol = CURRENCY_META[prices.exchangeGet].symbol;
-    document.getElementById('get-limit').textContent = `Лимит: ${minGet.toFixed(2)} - ${maxGet.toFixed(2)} ${getSymbol}`;
-}
-
-function swapCurrencies() {
-    const temp = prices.exchangeGive;
-    prices.exchangeGive = prices.exchangeGet;
-    prices.exchangeGet = temp;
-
-    document.getElementById('give-amount').value = '';
-    document.getElementById('get-amount').value = '';
-
-    updateExchangeUI();
-    fetchPrices();
-}
-
-function refreshExchangeRate() {
-    fetchPrices();
-    const btn = document.querySelector('.refresh-btn i');
-    if (btn) {
-        btn.style.transition = 'transform 0.5s';
-        btn.style.transform = 'rotate(360deg)';
-        setTimeout(() => btn.style.transform = 'rotate(0deg)', 500);
-    }
-}
-
-// -- Modal Logic (Exchange) --
-
-let activeSelector = null;
-
-function openCurrencyModal(type) {
-    activeSelector = type;
-    const modal = document.getElementById('currency-modal');
-    const list = document.getElementById('currency-list-items');
-    list.innerHTML = '';
-
-    const otherCode = type === 'give' ? prices.exchangeGet : prices.exchangeGive;
-    const otherIsCrypto = CURRENCY_META[otherCode].type === 'crypto';
-
-    Object.keys(CURRENCY_META).forEach(code => {
-        const meta = CURRENCY_META[code];
-        const isCrypto = meta.type === 'crypto';
-
-        if (code === otherCode) return;
-
-        // Filter Logic
-        // If OtherSide is Crypto -> Show only Fiat
-        // If OtherSide is Fiat -> Show only Crypto
-        // Allow USD <-> USDT
-
-        if (otherIsCrypto && isCrypto) return;
-        if (!otherIsCrypto && !isCrypto) return;
-
-        const item = document.createElement('div');
-        item.className = 'currency-list-item';
-        item.onclick = () => selectExchangeCurrency(code);
-
-        const img = isCrypto ? meta.flag : `https://flagcdn.com/w80/${meta.flag}.png`;
-
-        item.innerHTML = `
-            <div class="currency-item-left">
-                <img src="${img}" class="currency-icon-large">
-                <div>
-                     <div style="font-weight:600; color:white;">${code}</div>
-                     <div style="font-size:12px; color:#888;">${meta.name}</div>
-                </div>
-            </div>
-        `;
-        list.appendChild(item);
-    });
-
-    modal.classList.add('active');
-}
-
-function toggleCurrencyModal(show) {
-    const modal = document.getElementById('currency-modal');
-    if (show) modal.classList.add('active');
-    else modal.classList.remove('active');
-}
-
-function selectExchangeCurrency(code) {
-    if (activeSelector === 'give') prices.exchangeGive = code;
-    else prices.exchangeGet = code;
-
-    toggleCurrencyModal(false);
-    updateExchangeUI();
-    fetchPrices();
-}
-
-// -- Order --
 function submitOrder() {
     // Save data and redirect
+    const giveAmountVal = document.getElementById('give-amount').value;
+    const giveAmount = parseFloat(giveAmountVal);
+
+    if (!giveAmountVal || isNaN(giveAmount) || giveAmount <= 0) {
+        if (tg.showAlert) tg.showAlert("Пожалуйста, введите корректную сумму");
+        else alert("Пожалуйста, введите корректную сумму");
+        return;
+    }
+
+    const { min, max } = getLimits(prices.exchangeGive);
+    if (giveAmount < min) {
+        const msg = `Минимальная сумма обмена: ${min.toLocaleString()} ${CURRENCY_META[prices.exchangeGive].symbol}`;
+        if (tg.showAlert) tg.showAlert(msg);
+        else alert(msg);
+        return;
+    }
+
+    if (giveAmount > max) {
+        const msg = `Максимальная сумма обмена: ${max.toLocaleString()} ${CURRENCY_META[prices.exchangeGive].symbol}`;
+        if (tg.showAlert) tg.showAlert(msg);
+        else alert(msg);
+        return;
+    }
+
     const data = {
         give: prices.exchangeGive,
-        giveAmount: document.getElementById('give-amount').value,
+        giveAmount: giveAmountVal,
         get: prices.exchangeGet,
         getAmount: document.getElementById('get-amount').value
     };
-
-    if (!data.giveAmount) return;
 
     localStorage.setItem('rexes_order_data', JSON.stringify(data));
     window.location.href = 'order.html';
