@@ -1,4 +1,11 @@
-const tg = window.Telegram.WebApp;
+const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : {
+    expand: () => {},
+    initDataUnsafe: {},
+    showAlert: (msg) => alert(msg),
+    sendData: (data) => console.log('[sendData fallback]', data),
+    openTelegramLink: (url) => window.open(url, '_blank'),
+    BackButton: { show: () => {}, hide: () => {}, onClick: () => {} }
+};
 
 // State
 let prices = {
@@ -151,6 +158,160 @@ function initExchangePage() {
     updateExchangeUI();
     fetchPrices();
 }
+
+
+// ---------------- Exchange Page Helpers (modal + расчет) ----------------
+let _currencyModalSide = 'give';
+
+function toggleCurrencyModal(show) {
+    const modal = document.getElementById('currency-modal');
+    if (!modal) return;
+    if (show) modal.classList.add('active');
+    else modal.classList.remove('active');
+}
+
+function openCurrencyModal(side) {
+    _currencyModalSide = side === 'get' ? 'get' : 'give';
+
+    // Заголовок модалки
+    const title = document.querySelector('#currency-modal .modal-title');
+    if (title) title.textContent = 'Выберите валюту';
+
+    // Список валют: фиат из текущего города + крипта (USDT/BTC/ETH)
+    const city = cityData.find(c => c.id === currentCityId);
+    const allowedFiats = (city && city.currencies && city.currencies.length)
+        ? city.currencies.map(x => x.code)
+        : [ (city && city.currency) ? city.currency : 'RUB' ];
+
+    const cryptoCodes = Object.keys(CURRENCY_META).filter(k => CURRENCY_META[k].type === 'crypto');
+    const list = [...allowedFiats, ...cryptoCodes];
+
+    const wrap = document.getElementById('currency-list-items');
+    if (wrap) {
+        wrap.innerHTML = '';
+        list.forEach(code => {
+            const meta = CURRENCY_META[code];
+            const row = document.createElement('div');
+            const activeCode = _currencyModalSide === 'give' ? prices.exchangeGive : prices.exchangeGet;
+
+            row.className = `location-item ${code === activeCode ? 'selected' : ''}`;
+            row.onclick = () => selectCurrencyFromModal(code);
+
+            // Коротко и по делу (чтобы не ломать стили)
+            row.innerHTML = `
+                <span>${meta.symbol || code} — ${meta.name || ''}</span>
+                ${code === activeCode ? '<div class="check-icon"><i class="fa-solid fa-check"></i></div>' : ''}
+            `;
+            wrap.appendChild(row);
+        });
+    }
+
+    toggleCurrencyModal(true);
+}
+
+function selectCurrencyFromModal(code) {
+    if (_currencyModalSide === 'give') prices.exchangeGive = code;
+    else prices.exchangeGet = code;
+
+    toggleCurrencyModal(false);
+    updateExchangeUI();
+    // пересчитать
+    calculateGetAmount();
+    updateExchangeRateLogic();
+}
+
+function swapCurrencies() {
+    const tmp = prices.exchangeGive;
+    prices.exchangeGive = prices.exchangeGet;
+    prices.exchangeGet = tmp;
+
+    updateExchangeUI();
+    calculateGetAmount();
+    updateExchangeRateLogic();
+}
+
+function refreshExchangeRate() {
+    // Берем актуальные курсы и пересчитываем
+    fetchPrices().then(() => {
+        updateExchangeRateLogic();
+        calculateGetAmount();
+    });
+}
+
+function _toUsdt(amount, fromCode) {
+    const meta = CURRENCY_META[fromCode];
+    if (!meta) return NaN;
+
+    if (fromCode === 'USDTTRC' || fromCode === 'USDTERC') return amount;
+    if (fromCode === 'BTC') return amount * (prices.BTC || 0);
+    if (fromCode === 'ETH') return amount * (prices.ETH || 0);
+
+    // Fiat -> USDT (покупаем USDT за фиат)
+    return amount / (prices.currentBuy || 1);
+}
+
+function _fromUsdt(usdtAmount, toCode) {
+    const meta = CURRENCY_META[toCode];
+    if (!meta) return NaN;
+
+    if (toCode === 'USDTTRC' || toCode === 'USDTERC') return usdtAmount;
+    if (toCode === 'BTC') return usdtAmount / (prices.BTC || 1);
+    if (toCode === 'ETH') return usdtAmount / (prices.ETH || 1);
+
+    // USDT -> Fiat (продаем USDT за фиат)
+    return usdtAmount * (prices.currentSell || 1);
+}
+
+function convertAmount(amount, fromCode, toCode) {
+    if (!amount || isNaN(amount)) return 0;
+    if (fromCode === toCode) return amount;
+
+    const usdt = _toUsdt(amount, fromCode);
+    return _fromUsdt(usdt, toCode);
+}
+
+function formatAmount(value, code) {
+    const meta = CURRENCY_META[code];
+    if (!meta || value === null || value === undefined || isNaN(value)) return '';
+    const decimals = meta.type === 'crypto' ? 6 : 2;
+    // убираем хвостовые нули
+    return Number(value).toFixed(decimals).replace(/\.?0+$/, '');
+}
+
+function updateExchangeRateLogic() {
+    const give = prices.exchangeGive;
+    const get = prices.exchangeGet;
+
+    const rate = convertAmount(1, give, get);
+    prices.exchangeRate = rate;
+
+    const giveSym = (CURRENCY_META[give] && (CURRENCY_META[give].symbol || give)) || give;
+    const getSym = (CURRENCY_META[get] && (CURRENCY_META[get].symbol || get)) || get;
+
+    const el = document.getElementById('exchange-rate-display');
+    if (el) el.textContent = `1 ${giveSym} = ${formatAmount(rate, get)} ${getSym}`;
+}
+
+function calculateGetAmount() {
+    const giveInput = document.getElementById('give-amount');
+    const getInput = document.getElementById('get-amount');
+    if (!giveInput || !getInput) return;
+
+    const giveVal = parseFloat((giveInput.value || '').toString().replace(',', '.'));
+    if (!giveInput.value || isNaN(giveVal) || giveVal <= 0) {
+        getInput.value = '';
+        updateExchangeRateLogic();
+        return;
+    }
+
+    const out = convertAmount(giveVal, prices.exchangeGive, prices.exchangeGet);
+    getInput.value = formatAmount(out, prices.exchangeGet);
+    updateExchangeRateLogic();
+
+    // Обновим лимиты на всякий случай
+    updateExchangeLimits();
+}
+// -----------------------------------------------------------------------
 
 // -- Shared UI Logic --
 
@@ -322,12 +483,27 @@ function getLimits(code) {
 }
 
 function updateExchangeLimits() {
+    // Give limit
     const giveCode = prices.exchangeGive;
-    const meta = CURRENCY_META[giveCode];
-    const { min, max } = getLimits(giveCode);
+    const giveMeta = CURRENCY_META[giveCode];
+    const giveEl = document.getElementById('give-limit');
+    if (giveEl && giveMeta) {
+        const { min, max } = getLimits(giveCode);
+        giveEl.textContent = `Лимит: ${min.toLocaleString()} - ${max.toLocaleString()} ${giveMeta.symbol || ''}`.trim();
+    }
 
-    document.getElementById('give-limit').textContent = `Лимит: ${min.toLocaleString()} - ${max.toLocaleString()} ${meta.symbol}`;
+    // Get limit (показываем диапазон "к получению" как пример, исходя из лимита give)
+    const getCode = prices.exchangeGet;
+    const getMeta = CURRENCY_META[getCode];
+    const getEl = document.getElementById('get-limit');
+    if (getEl && getMeta) {
+        const { min: gMin, max: gMax } = getLimits(giveCode);
+        const minOut = convertAmount(gMin, giveCode, getCode);
+        const maxOut = convertAmount(gMax, giveCode, getCode);
+        getEl.textContent = `Лимит: ${formatAmount(minOut, getCode)} - ${formatAmount(maxOut, getCode)} ${getMeta.symbol || ''}`.trim();
+    }
 }
+
 
 // ... existing code ...
 
@@ -430,17 +606,64 @@ function renderInput(parent, id, label, placeholder, extraClass = '') {
 }
 
 function submitFinalOrder() {
+    const orderData = JSON.parse(localStorage.getItem('rexes_order_data') || '{}');
+    if (!orderData.give || !orderData.get) {
+        if (tg.showAlert) tg.showAlert('Сначала выберите обмен');
+        else alert('Сначала выберите обмен');
+        window.location.href = 'exchange.html';
+        return;
+    }
+
+    // Собираем форму
     const inputs = document.querySelectorAll('.form-input');
     const formData = {};
-    inputs.forEach(inp => formData[inp.id] = inp.value);
-    const orderData = JSON.parse(localStorage.getItem('rexes_order_data') || '{}');
-    tg.sendData(JSON.stringify({ type: 'ORDER_FINAL', ...orderData, ...formData }));
+    inputs.forEach(inp => formData[inp.id] = (inp.value || '').trim());
+
+    // Мини-валидация: обязательные поля по факту того, что на странице отрисовано
+    const requiredIds = ['holder_name']; // в обоих сценариях есть ФИО
+    if (document.getElementById('card_number')) requiredIds.push('card_number');
+    if (document.getElementById('sender_card')) requiredIds.push('sender_card');
+    if (document.getElementById('wallet_address')) requiredIds.push('wallet_address');
+
+    const missing = requiredIds.filter(id => {
+        const el = document.getElementById(id);
+        return el && !((el.value || '').trim());
+    });
+
+    // контакт: хотя бы один
+    const hasContact = !!(formData.phone || formData.telegram || formData.email);
+
+    if (missing.length || !hasContact) {
+        const msg = !hasContact
+            ? 'Укажите хотя бы один контакт: телефон / telegram / email'
+            : ('Заполните обязательные поля: ' + missing.join(', '));
+        if (tg.showAlert) tg.showAlert(msg);
+        else alert(msg);
+        return;
+    }
+
+    // Город
+    const city = cityData.find(c => c.id === currentCityId);
+    const cityName = city ? city.name : currentCityId;
+
+    const payload = {
+        type: 'ORDER_FINAL',
+        city_id: currentCityId,
+        city: cityName,
+        ...orderData,
+        ...formData,
+        ts: Date.now()
+    };
+
+    tg.sendData(JSON.stringify(payload));
 }
+
+
 
 
 // -- Shared Helper --
 function openSupport() { tg.openTelegramLink('https://t.me/rexes_support'); }
-function openAml() { window.location.href = 'https://rexes.world/chain/index'; }
+function openAml() { window.location.href = 'https://rexes.world/chain/index.html'; }
 
 // -- Location Modal --
 const cityData = [
